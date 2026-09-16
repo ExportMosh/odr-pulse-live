@@ -5,826 +5,836 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ODR Pulse — Live</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap');
 
-  :root{
-    color-scheme: light;
-    --page:        #f9f9f7;
-    --surface:     #fcfcfb;
-    --surface-2:   #f2f1ec;
-    --ink:         #0b0b0b;
-    --ink-2:       #52514e;
-    --muted:       #898781;
-    --grid:        #e1e0d9;
-    --baseline:    #c3c2b7;
-    --border:      rgba(11,11,11,0.10);
-    --accent:      #2a78d6;
-    --accent-ink:  #ffffff;
-    --claims-hue:  #2a78d6;
-    --fb-hue:      #eb6834;
-    --good:     #0ca30c;
-    --warning:  #fab219;
-    --serious:  #ec835a;
-    --critical: #d03b3b;
-    --good-text: #006300;
-    --warn-text: #7a5400;
-    --shadow: 0 1px 2px rgba(11,11,11,.04), 0 8px 24px rgba(11,11,11,.05);
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      color-scheme: dark;
-      --page:      #0d0d0d;
-      --surface:   #1a1a19;
-      --surface-2: #232322;
-      --ink:       #ffffff;
-      --ink-2:     #c3c2b7;
-      --muted:     #898781;
-      --grid:      #2c2c2a;
-      --baseline:  #383835;
-      --border:    rgba(255,255,255,0.10);
-      --accent:    #3987e5;
-      --accent-ink:#0b0b0b;
-      --claims-hue:#3987e5;
-      --fb-hue:    #d95926;
-      --good:     #0ca30c;
-      --warning:  #fab219;
-      --serious:  #ec835a;
-      --critical: #e66767;
-      --good-text: #0ca30c;
-      --warn-text: #fab219;
-      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
-    }
-  }
-  :root[data-theme="dark"]{
-    color-scheme: dark;
-    --page:      #0d0d0d;
-    --surface:   #1a1a19;
-    --surface-2: #232322;
-    --ink:       #ffffff;
-    --ink-2:     #c3c2b7;
-    --muted:     #898781;
-    --grid:      #2c2c2a;
-    --baseline:  #383835;
-    --border:    rgba(255,255,255,0.10);
-    --accent:    #3987e5;
-    --accent-ink:#0b0b0b;
-    --claims-hue:#3987e5;
-    --fb-hue:    #d95926;
-    --good:     #0ca30c;
-    --warning:  #fab219;
-    --serious:  #ec835a;
-    --critical: #e66767;
-    --good-text: #0ca30c;
-    --warn-text: #fab219;
-    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
-  }
+:root{
+color-scheme: light;
+--page: #f9f9f7;
+--surface: #fcfcfb;
+--surface-2: #f2f1ec;
+--ink: #0b0b0b;
+--ink-2: #52514e;
+--muted: #898781;
+--grid: #e1e0d9;
+--baseline: #c3c2b7;
+--border: rgba(11,11,11,0.10);
+--accent: #2a78d6;
+--accent-ink: #ffffff;
+--claims-hue: #2a78d6;
+--fb-hue: #eb6834;
+--good: #0ca30c;
+--warning: #fab219;
+--serious: #ec835a;
+--critical: #d03b3b;
+--good-text: #006300;
+--warn-text: #7a5400;
+--shadow: 0 1px 2px rgba(11,11,11,.04), 0 8px 24px rgba(11,11,11,.05);
+}
+@media (prefers-color-scheme: dark){
+:root:not([data-theme="light"]){
+color-scheme: dark;
+--page: #0d0d0d;
+--surface: #1a1a19;
+--surface-2: #232322;
+--ink: #ffffff;
+--ink-2: #c3c2b7;
+--muted: #898781;
+--grid: #2c2c2a;
+--baseline: #383835;
+--border: rgba(255,255,255,0.10);
+--accent: #3987e5;
+--accent-ink:#0b0b0b;
+--claims-hue:#3987e5;
+--fb-hue: #d95926;
+--good: #0ca30c;
+--warning: #fab219;
+--serious: #ec835a;
+--critical: #e66767;
+--good-text: #0ca30c;
+--warn-text: #fab219;
+--shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+}
+}
+:root[data-theme="dark"]{
+color-scheme: dark;
+--page: #0d0d0d;
+--surface: #1a1a19;
+--surface-2: #232322;
+--ink: #ffffff;
+--ink-2: #c3c2b7;
+--muted: #898781;
+--grid: #2c2c2a;
+--baseline: #383835;
+--border: rgba(255,255,255,0.10);
+--accent: #3987e5;
+--accent-ink:#0b0b0b;
+--claims-hue:#3987e5;
+--fb-hue: #d95926;
+--good: #0ca30c;
+--warning: #fab219;
+--serious: #ec835a;
+--critical: #e66767;
+--good-text: #0ca30c;
+--warn-text: #fab219;
+--shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+}
 
-  *{box-sizing:border-box;}
-  body{
-    background:var(--page);
-    color:var(--ink);
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    padding: 20px 16px 56px;
-    margin:0;
-    -webkit-font-smoothing:antialiased;
-  }
-  h1,h2,h3{font-family:"Manrope", system-ui, sans-serif; text-wrap:balance; margin:0;}
-  .wrap{max-width:1280px; margin:0 auto; display:flex; flex-direction:column; gap:20px;}
+*{box-sizing:border-box;}
+body{
+background:var(--page);
+color:var(--ink);
+font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+padding: 20px 16px 56px;
+margin:0;
+-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:"Manrope", system-ui, sans-serif; text-wrap:balance; margin:0;}
+.wrap{max-width:1280px; margin:0 auto; display:flex; flex-direction:column; gap:20px;}
 
-  .topbar{display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px;}
-  .brand{display:flex; flex-direction:column; gap:4px;}
-  .brand .eyebrow{font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent);}
-  .brand h1{font-size:26px; font-weight:800;}
-  .brand p{margin:2px 0 0; color:var(--ink-2); font-size:13.5px; max-width:56ch;}
-  .meta{display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--muted); flex-wrap:wrap; justify-content:flex-end;}
-  .dot{width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 0 3px color-mix(in srgb, var(--good) 22%, transparent);}
-  .dot.stale{background:var(--warning); box-shadow:0 0 0 3px color-mix(in srgb, var(--warning) 22%, transparent);}
-  .dot.err{background:var(--critical); box-shadow:0 0 0 3px color-mix(in srgb, var(--critical) 22%, transparent);}
+.topbar{display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px;}
+.brand{display:flex; flex-direction:column; gap:4px;}
+.brand .eyebrow{font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent);}
+.brand h1{font-size:26px; font-weight:800;}
+.brand p{margin:2px 0 0; color:var(--ink-2); font-size:13.5px; max-width:56ch;}
+.meta{display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--muted); flex-wrap:wrap; justify-content:flex-end;}
+.dot{width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 0 3px color-mix(in srgb, var(--good) 22%, transparent);}
+.dot.stale{background:var(--warning); box-shadow:0 0 0 3px color-mix(in srgb, var(--warning) 22%, transparent);}
+.dot.err{background:var(--critical); box-shadow:0 0 0 3px color-mix(in srgb, var(--critical) 22%, transparent);}
 
-  .refreshBtn{
-    border:1px solid var(--border); background:var(--surface); color:var(--ink); font:inherit; font-size:12.5px; font-weight:700;
-    padding:6px 12px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
-  }
-  .refreshBtn:hover{background:var(--surface-2);}
-  .refreshBtn:disabled{opacity:.6; cursor:default;}
-  .refreshBtn svg{width:13px; height:13px;}
-  .refreshBtn.spinning svg{animation:spin 0.8s linear infinite;}
-  @keyframes spin{ to{ transform:rotate(360deg); } }
+.refreshBtn{
+border:1px solid var(--border); background:var(--surface); color:var(--ink); font:inherit; font-size:12.5px; font-weight:700;
+padding:6px 12px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+}
+.refreshBtn:hover{background:var(--surface-2);}
+.refreshBtn:disabled{opacity:.6; cursor:default;}
+.refreshBtn svg{width:13px; height:13px;}
+.refreshBtn.spinning svg{animation:spin 0.8s linear infinite;}
+@keyframes spin{ to{ transform:rotate(360deg); } }
 
-  .errorbar{
-    display:none; align-items:flex-start; gap:10px; background:color-mix(in srgb, var(--critical) 12%, var(--surface));
-    border:1px solid color-mix(in srgb, var(--critical) 35%, var(--border)); border-radius:12px; padding:12px 16px; font-size:13px; color:var(--ink-2);
-  }
-  .errorbar.show{display:flex;}
-  .errorbar b{color:var(--critical);}
+.logoutBtn{
+border:1px solid var(--border); background:var(--surface); color:var(--ink-2); font:inherit; font-size:12.5px; font-weight:700;
+padding:6px 12px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+}
+.logoutBtn:hover{background:var(--surface-2); color:var(--critical);}
 
-  .filterbar{
-    display:flex; flex-wrap:wrap; gap:14px 24px; align-items:center;
-    background:var(--surface); border:1px solid var(--border); border-radius:14px;
-    padding:14px 18px; box-shadow:var(--shadow);
-    position:sticky; top:10px; z-index:20;
-  }
-  .filtergroup{display:flex; flex-direction:column; gap:6px;}
-  .filtergroup label{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);}
-  .seg{display:flex; gap:4px; background:var(--surface-2); padding:4px; border-radius:10px;}
-  .seg button{
-    border:none; background:transparent; color:var(--ink-2); font:inherit; font-size:13px; font-weight:600;
-    padding:7px 13px; border-radius:7px; cursor:pointer; transition:background .15s, color .15s;
-    font-family: system-ui, sans-serif;
-  }
-  .seg button:hover{background:color-mix(in srgb, var(--accent) 10%, transparent);}
-  .seg button.active{background:var(--accent); color:var(--accent-ink);}
-  select.acct{
-    appearance:none; background:var(--surface-2); border:1px solid var(--border); color:var(--ink);
-    font:inherit; font-size:13.5px; font-weight:600; padding:9px 34px 9px 14px; border-radius:9px; cursor:pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23898781'/%3E%3C/svg%3E");
-    background-repeat:no-repeat; background-position:right 14px center;
-  }
-  input.datepick{
-    appearance:none; background:var(--surface-2); border:1px solid var(--border); color:var(--ink);
-    font:inherit; font-size:13.5px; font-weight:600; padding:8px 12px; border-radius:9px; cursor:pointer;
-  }
-  .dateRow{display:flex; align-items:center; gap:6px;}
-  .dateDash{color:var(--muted); font-size:13px; flex:0 0 auto;}
-  .clearDateBtn{
-    border:1px solid var(--border); background:var(--surface); color:var(--ink-2); font-size:13px; font-weight:700;
-    width:32px; height:32px; border-radius:8px; cursor:pointer; display:none; align-items:center; justify-content:center; flex:0 0 auto;
-  }
-  .clearDateBtn.show{display:inline-flex;}
-  .clearDateBtn:hover{background:var(--surface-2);}
-  .spacer{flex:1;}
+.errorbar{
+display:none; align-items:flex-start; gap:10px; background:color-mix(in srgb, var(--critical) 12%, var(--surface));
+border:1px solid color-mix(in srgb, var(--critical) 35%, var(--border)); border-radius:12px; padding:12px 16px; font-size:13px; color:var(--ink-2);
+}
+.errorbar.show{display:flex;}
+.errorbar b{color:var(--critical);}
 
-  .agentTable{margin-top:12px;}
-  .agentRow, .agentHead{
-    display:grid; grid-template-columns:1fr 84px 104px 68px; gap:12px; align-items:center;
-    padding:9px 0; border-bottom:1px solid var(--border); font-size:13px;
-  }
-  .agentHead{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); padding-bottom:8px;}
-  .agentRow .aname{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .agentRow .anum{text-align:right; font-variant-numeric:tabular-nums; font-weight:700;}
-  .agentRow .atot{text-align:right; font-variant-numeric:tabular-nums; font-weight:800;}
-  .agentHead > div:not(:first-child), .agentRow .anum, .agentRow .atot{text-align:right;}
+.filterbar{
+display:flex; flex-wrap:wrap; gap:14px 24px; align-items:center;
+background:var(--surface); border:1px solid var(--border); border-radius:14px;
+padding:14px 18px; box-shadow:var(--shadow);
+position:sticky; top:10px; z-index:20;
+}
+.filtergroup{display:flex; flex-direction:column; gap:6px;}
+.filtergroup label{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);}
+.seg{display:flex; gap:4px; background:var(--surface-2); padding:4px; border-radius:10px;}
+.seg button{
+border:none; background:transparent; color:var(--ink-2); font:inherit; font-size:13px; font-weight:600;
+padding:7px 13px; border-radius:7px; cursor:pointer; transition:background .15s, color .15s;
+font-family: system-ui, sans-serif;
+}
+.seg button:hover{background:color-mix(in srgb, var(--accent) 10%, transparent);}
+.seg button.active{background:var(--accent); color:var(--accent-ink);}
+select.acct{
+appearance:none; background:var(--surface-2); border:1px solid var(--border); color:var(--ink);
+font:inherit; font-size:13.5px; font-weight:600; padding:9px 34px 9px 14px; border-radius:9px; cursor:pointer;
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23898781'/%3E%3C/svg%3E");
+background-repeat:no-repeat; background-position:right 14px center;
+}
+input.datepick{
+appearance:none; background:var(--surface-2); border:1px solid var(--border); color:var(--ink);
+font:inherit; font-size:13.5px; font-weight:600; padding:8px 12px; border-radius:9px; cursor:pointer;
+}
+.dateRow{display:flex; align-items:center; gap:6px;}
+.dateDash{color:var(--muted); font-size:13px; flex:0 0 auto;}
+.clearDateBtn{
+border:1px solid var(--border); background:var(--surface); color:var(--ink-2); font-size:13px; font-weight:700;
+width:32px; height:32px; border-radius:8px; cursor:pointer; display:none; align-items:center; justify-content:center; flex:0 0 auto;
+}
+.clearDateBtn.show{display:inline-flex;}
+.clearDateBtn:hover{background:var(--surface-2);}
+.spacer{flex:1;}
 
-  .section{display:flex; flex-direction:column; gap:14px;}
-  .section-head{
-    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
-    padding:16px 20px; border-radius:14px; box-shadow:var(--shadow);
-    border:1px solid var(--border);
-  }
-  .section-head.claims{ background: color-mix(in srgb, var(--claims-hue) 10%, var(--surface)); }
-  .section-head.feedback{ background: color-mix(in srgb, var(--fb-hue) 10%, var(--surface)); }
-  .section-head .num{font-size:32px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.01em;}
-  .section-head .stitle{display:flex; flex-direction:column; gap:2px;}
-  .section-head .stitle .eyebrow{font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted);}
-  .section-head .stitle h2{font-size:17px; font-weight:800;}
-  .section-head .flags{display:flex; gap:8px; margin-left:auto; flex-wrap:wrap;}
+.agentTable{margin-top:12px;}
+.agentRow, .agentHead{
+display:grid; grid-template-columns:1fr 84px 104px 68px; gap:12px; align-items:center;
+padding:9px 0; border-bottom:1px solid var(--border); font-size:13px;
+}
+.agentHead{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); padding-bottom:8px;}
+.agentRow .aname{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.agentRow .anum{text-align:right; font-variant-numeric:tabular-nums; font-weight:700;}
+.agentRow .atot{text-align:right; font-variant-numeric:tabular-nums; font-weight:800;}
+.agentHead > div:not(:first-child), .agentRow .anum, .agentRow .atot{text-align:right;}
 
-  .flag{
-    display:flex; flex-direction:column; align-items:flex-end; gap:0; padding:6px 14px;
-    border-radius:10px; background:var(--surface); border:1px solid var(--border); min-width:108px;
-  }
-  .flag .fnum{font-size:18px; font-weight:800; font-variant-numeric:tabular-nums;}
-  .flag .flabel{font-size:10.5px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.04em;}
-  .flag.warn .fnum{color:var(--warn-text);}
-  .flag.crit .fnum{color:var(--critical);}
-  .flag.ok .fnum{color:var(--good-text);}
+.section{display:flex; flex-direction:column; gap:14px;}
+.section-head{
+display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+padding:16px 20px; border-radius:14px; box-shadow:var(--shadow);
+border:1px solid var(--border);
+}
+.section-head.claims{ background: color-mix(in srgb, var(--claims-hue) 10%, var(--surface)); }
+.section-head.feedback{ background: color-mix(in srgb, var(--fb-hue) 10%, var(--surface)); }
+.section-head .num{font-size:32px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.01em;}
+.section-head .stitle{display:flex; flex-direction:column; gap:2px;}
+.section-head .stitle .eyebrow{font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted);}
+.section-head .stitle h2{font-size:17px; font-weight:800;}
+.section-head .flags{display:flex; gap:8px; margin-left:auto; flex-wrap:wrap;}
 
-  .grid{display:grid; grid-template-columns:repeat(12, 1fr); gap:14px;}
-  .card{
-    background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 18px 14px;
-    box-shadow:var(--shadow); display:flex; flex-direction:column; min-width:0;
-  }
-  .card h3{font-size:14.5px; font-weight:700; display:flex; align-items:center; justify-content:space-between; gap:10px;}
-  .card h3 .cnt{font-size:12px; font-weight:700; color:var(--muted); font-variant-numeric:tabular-nums;}
-  .card .hint{font-size:11.5px; color:var(--muted); margin-top:2px;}
-  .card .chartbox{position:relative; margin-top:12px; flex:1;}
-  .c-span-6{grid-column:span 6;} .c-span-4{grid-column:span 4;} .c-span-12{grid-column:span 12;}
-  @media (max-width:980px){ .c-span-6,.c-span-4{grid-column:span 12;} }
+.flag{
+display:flex; flex-direction:column; align-items:flex-end; gap:0; padding:6px 14px;
+border-radius:10px; background:var(--surface); border:1px solid var(--border); min-width:108px;
+}
+.flag .fnum{font-size:18px; font-weight:800; font-variant-numeric:tabular-nums;}
+.flag .flabel{font-size:10.5px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.04em;}
+.flag.warn .fnum{color:var(--warn-text);}
+.flag.crit .fnum{color:var(--critical);}
+.flag.ok .fnum{color:var(--good-text);}
 
-  .skeleton{
-    display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12.5px;
-  }
-  footer{text-align:center; color:var(--muted); font-size:12px; padding-top:8px;}
-  footer a{color:var(--accent);}
+.grid{display:grid; grid-template-columns:repeat(12, 1fr); gap:14px;}
+.card{
+background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 18px 14px;
+box-shadow:var(--shadow); display:flex; flex-direction:column; min-width:0;
+}
+.card h3{font-size:14.5px; font-weight:700; display:flex; align-items:center; justify-content:space-between; gap:10px;}
+.card h3 .cnt{font-size:12px; font-weight:700; color:var(--muted); font-variant-numeric:tabular-nums;}
+.card .hint{font-size:11.5px; color:var(--muted); margin-top:2px;}
+.card .chartbox{position:relative; margin-top:12px; flex:1;}
+.c-span-6{grid-column:span 6;} .c-span-4{grid-column:span 4;} .c-span-12{grid-column:span 12;}
+@media (max-width:980px){ .c-span-6,.c-span-4{grid-column:span 12;} }
+
+.skeleton{
+display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12.5px;
+}
+footer{text-align:center; color:var(--muted); font-size:12px; padding-top:8px;}
+footer a{color:var(--accent);}
 </style>
 </head>
 <body>
 
 <div class="wrap">
 
-  <div class="topbar">
-    <div class="brand">
-      <div class="eyebrow">Seller Operations</div>
-      <h1>ODR Pulse — Live</h1>
-      <p>Where your claims and negative feedback are concentrated — by outcome, reason and account — pulled straight from your Google Sheet on every load.</p>
-    </div>
-    <div class="meta">
-      <span class="dot" id="statusDot"></span>
-      <span id="lastRefresh">Loading data…</span>
-      <button class="refreshBtn" id="refreshBtn" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 4.36A9 9 0 0020.49 15"></path></svg>
-        Refresh
-      </button>
-    </div>
-  </div>
+<div class="topbar">
+<div class="brand">
+<div class="eyebrow">Seller Operations</div>
+<h1>ODR Pulse — Live</h1>
+<p>Where your claims and negative feedback are concentrated — by outcome, reason and account — pulled straight from your Google Sheet on every load.</p>
+</div>
+<div class="meta">
+<span class="dot" id="statusDot"></span>
+<span id="lastRefresh">Loading data…</span>
+<button class="refreshBtn" id="refreshBtn" type="button">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 4.36A9 9 0 0020.49 15"></path></svg>
+Refresh
+</button>
+<a class="logoutBtn" id="logoutLink" href="/login">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+Log out
+</a>
+</div>
+</div>
 
-  <div class="errorbar" id="errorBar">
-    <div><b>Couldn't load live data.</b> <span id="errorMsg"></span></div>
-  </div>
+<div class="errorbar" id="errorBar">
+<div><b>Couldn't load live data.</b> <span id="errorMsg"></span></div>
+</div>
 
-  <div class="filterbar">
-    <div class="filtergroup">
-      <label for="acctSelect">Account</label>
-      <select id="acctSelect" class="acct"><option value="all">All accounts</option></select>
-    </div>
-    <div class="filtergroup">
-      <label>Window</label>
-      <div class="seg" id="daySeg">
-        <button data-days="7">7d</button>
-        <button data-days="14">14d</button>
-        <button data-days="30">30d</button>
-        <button data-days="60">60d</button>
-        <button data-days="90">90d</button>
-      </div>
-    </div>
-    <div class="filtergroup">
-      <label for="dateFromInput">Date range</label>
-      <div class="dateRow">
-        <input type="date" id="dateFromInput" class="datepick" title="From date">
-        <span class="dateDash">→</span>
-        <input type="date" id="dateToInput" class="datepick" title="To date">
-        <button class="clearDateBtn" id="dateClearBtn" type="button" title="Clear date range">✕</button>
-      </div>
-    </div>
-    <div class="spacer"></div>
-  </div>
+<div class="filterbar">
+<div class="filtergroup">
+<label for="acctSelect">Account</label>
+<select id="acctSelect" class="acct"><option value="all">All accounts</option></select>
+</div>
+<div class="filtergroup">
+<label>Window</label>
+<div class="seg" id="daySeg">
+<button data-days="7">7d</button>
+<button data-days="14">14d</button>
+<button data-days="30">30d</button>
+<button data-days="60">60d</button>
+<button data-days="90">90d</button>
+</div>
+</div>
+<div class="filtergroup">
+<label for="dateFromInput">Date range</label>
+<div class="dateRow">
+<input type="date" id="dateFromInput" class="datepick" title="From date">
+<span class="dateDash">→</span>
+<input type="date" id="dateToInput" class="datepick" title="To date">
+<button class="clearDateBtn" id="dateClearBtn" type="button" title="Clear date range">✕</button>
+</div>
+</div>
+<div class="spacer"></div>
+</div>
 
-  <!-- ============ AGENT REMOVALS ============ -->
-  <div class="section" id="agentSection">
-    <div class="grid">
-      <div class="card c-span-12">
-        <h3>Agent removals <span class="cnt" id="cnt-agent"></span></h3>
-        <div class="hint">Who withdrew a claim or removed a negative feedback — counts follow the account and date filters above</div>
-        <div class="agentTable" id="agentTable"></div>
-      </div>
-    </div>
-  </div>
+<!-- ============ AGENT REMOVALS ============ -->
+<div class="section" id="agentSection">
+<div class="grid">
+<div class="card c-span-12">
+<h3>Agent removals <span class="cnt" id="cnt-agent"></span></h3>
+<div class="hint">Who withdrew a claim or removed a negative feedback — counts follow the account and date filters above</div>
+<div class="agentTable" id="agentTable"></div>
+</div>
+</div>
+</div>
 
-  <!-- ============ A-Z CLAIMS ============ -->
-  <div class="section" id="claimsSection">
-    <div class="section-head claims">
-      <div class="num" id="claimsTotal">0</div>
-      <div class="stitle"><div class="eyebrow">Step 1</div><h2>A-Z Claims</h2></div>
-      <div class="flags">
-        <div class="flag crit"><div class="fnum" id="odrPendingFlag">0</div><div class="flabel">ODR pending</div></div>
-        <div class="flag warn"><div class="fnum" id="claimOpenFlag">0</div><div class="flabel">Still open</div></div>
-        <div class="flag crit"><div class="fnum" id="refundPendingFlag">0</div><div class="flabel">Refund pending</div></div>
-      </div>
-    </div>
+<!-- ============ A-Z CLAIMS ============ -->
+<div class="section" id="claimsSection">
+<div class="section-head claims">
+<div class="num" id="claimsTotal">0</div>
+<div class="stitle"><div class="eyebrow">Step 1</div><h2>A-Z Claims</h2></div>
+<div class="flags">
+<div class="flag crit"><div class="fnum" id="odrPendingFlag">0</div><div class="flabel">ODR pending</div></div>
+<div class="flag warn"><div class="fnum" id="claimOpenFlag">0</div><div class="flabel">Still open</div></div>
+<div class="flag crit"><div class="fnum" id="refundPendingFlag">0</div><div class="flabel">Refund pending</div></div>
+</div>
+</div>
 
-    <div class="grid">
-      <div class="card c-span-4">
-        <h3>ODR impact <span class="cnt" id="cnt-odr"></span></h3>
-        <div class="hint">Counted against Order Defect Rate, not counted, or awaiting decision</div>
-        <div class="chartbox" style="height:200px"><canvas id="chartOdr"></canvas></div>
-      </div>
-      <div class="card c-span-4">
-        <h3>Claim status <span class="cnt" id="cnt-status"></span></h3>
-        <div class="hint">Where each claim stands, highest count first</div>
-        <div class="chartbox" style="height:200px"><canvas id="chartStatus"></canvas></div>
-      </div>
-      <div class="card c-span-4">
-        <h3>Refund status <span class="cnt" id="cnt-refund"></span></h3>
-        <div class="hint">Who funded the refund, or still pending</div>
-        <div class="chartbox" style="height:200px"><canvas id="chartRefund"></canvas></div>
-      </div>
-      <div class="card c-span-12">
-        <h3>Customer issue <span class="cnt" id="cnt-issue"></span></h3>
-        <div class="hint">Reason customers filed the claim — highest count first</div>
-        <div class="chartbox" style="height:230px"><canvas id="chartIssue"></canvas></div>
-      </div>
-    </div>
-  </div>
+<div class="grid">
+<div class="card c-span-4">
+<h3>ODR impact <span class="cnt" id="cnt-odr"></span></h3>
+<div class="hint">Counted against Order Defect Rate, not counted, or awaiting decision</div>
+<div class="chartbox" style="height:200px"><canvas id="chartOdr"></canvas></div>
+</div>
+<div class="card c-span-4">
+<h3>Claim status <span class="cnt" id="cnt-status"></span></h3>
+<div class="hint">Where each claim stands, highest count first</div>
+<div class="chartbox" style="height:200px"><canvas id="chartStatus"></canvas></div>
+</div>
+<div class="card c-span-4">
+<h3>Refund status <span class="cnt" id="cnt-refund"></span></h3>
+<div class="hint">Who funded the refund, or still pending</div>
+<div class="chartbox" style="height:200px"><canvas id="chartRefund"></canvas></div>
+</div>
+<div class="card c-span-12">
+<h3>Customer issue <span class="cnt" id="cnt-issue"></span></h3>
+<div class="hint">Reason customers filed the claim — highest count first</div>
+<div class="chartbox" style="height:230px"><canvas id="chartIssue"></canvas></div>
+</div>
+</div>
+</div>
 
-  <!-- ============ NEGATIVE FEEDBACK ============ -->
-  <div class="section" id="fbSection">
-    <div class="section-head feedback">
-      <div class="num" id="fbTotal">0</div>
-      <div class="stitle"><div class="eyebrow">Step 2</div><h2>Negative Feedback</h2></div>
-      <div class="flags">
-        <div class="flag crit"><div class="fnum" id="fbLiveFlag">0</div><div class="flabel">Still live</div></div>
-        <div class="flag ok"><div class="fnum" id="fbRemovedFlag">0</div><div class="flabel">Removed</div></div>
-        <div class="flag warn"><div class="fnum" id="fbPendingFlag">0</div><div class="flabel">Pending review</div></div>
-      </div>
-    </div>
+<!-- ============ NEGATIVE FEEDBACK ============ -->
+<div class="section" id="fbSection">
+<div class="section-head feedback">
+<div class="num" id="fbTotal">0</div>
+<div class="stitle"><div class="eyebrow">Step 2</div><h2>Negative Feedback</h2></div>
+<div class="flags">
+<div class="flag crit"><div class="fnum" id="fbLiveFlag">0</div><div class="flabel">Still live</div></div>
+<div class="flag ok"><div class="fnum" id="fbRemovedFlag">0</div><div class="flabel">Removed</div></div>
+<div class="flag warn"><div class="fnum" id="fbPendingFlag">0</div><div class="flabel">Pending review</div></div>
+</div>
+</div>
 
-    <div class="grid">
-      <div class="card c-span-4">
-        <h3>Removal status <span class="cnt" id="cnt-fbstatus"></span></h3>
-        <div class="hint">Removed, still live, or awaiting review</div>
-        <div class="chartbox" style="height:200px"><canvas id="chartFbStatus"></canvas></div>
-      </div>
-      <div class="card c-span-4">
-        <h3>Star rating <span class="cnt" id="cnt-rating"></span></h3>
-        <div class="hint">Full 1–5★ scale — this log currently only captures 1–3★ reviews</div>
-        <div class="chartbox" style="height:200px"><canvas id="chartRating"></canvas></div>
-      </div>
-      <div class="card c-span-4">
-        <h3>By account <span class="cnt" id="cnt-fbacct"></span></h3>
-        <div class="hint">Where negative feedback is concentrated</div>
-        <div class="chartbox" style="height:200px"><canvas id="chartFbAcct"></canvas></div>
-      </div>
-      <div class="card c-span-12">
-        <h3>Feedback reason <span class="cnt" id="cnt-reason"></span></h3>
-        <div class="hint">Root cause customers cited — highest count first</div>
-        <div class="chartbox" style="height:280px"><canvas id="chartReason"></canvas></div>
-      </div>
-    </div>
-  </div>
+<div class="grid">
+<div class="card c-span-4">
+<h3>Removal status <span class="cnt" id="cnt-fbstatus"></span></h3>
+<div class="hint">Removed, still live, or awaiting review</div>
+<div class="chartbox" style="height:200px"><canvas id="chartFbStatus"></canvas></div>
+</div>
+<div class="card c-span-4">
+<h3>Star rating <span class="cnt" id="cnt-rating"></span></h3>
+<div class="hint">Full 1–5★ scale — this log currently only captures 1–3★ reviews</div>
+<div class="chartbox" style="height:200px"><canvas id="chartRating"></canvas></div>
+</div>
+<div class="card c-span-4">
+<h3>By account <span class="cnt" id="cnt-fbacct"></span></h3>
+<div class="hint">Where negative feedback is concentrated</div>
+<div class="chartbox" style="height:200px"><canvas id="chartFbAcct"></canvas></div>
+</div>
+<div class="card c-span-12">
+<h3>Feedback reason <span class="cnt" id="cnt-reason"></span></h3>
+<div class="hint">Root cause customers cited — highest count first</div>
+<div class="chartbox" style="height:280px"><canvas id="chartReason"></canvas></div>
+</div>
+</div>
+</div>
 
-  <footer>ODR Pulse · Live · refreshes automatically on every load · <a href="#" id="logoutLink" style="color:inherit;text-decoration:underline;">Log out</a></footer>
+<footer>ODR Pulse · Live · refreshes automatically on every load</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script>
 (function(){
-  const logoutLink = document.getElementById('logoutLink');
-  if (logoutLink) {
-    logoutLink.addEventListener('click', async (e) => {
-      e.preventDefault();
-      try { await fetch('/do-logout', { method: 'POST' }); } catch(e2){}
-      location.href = '/login.html';
-    });
-  }
-  // ======================================================================
-  // CONFIG — the Google Sheet this page reads from. The sheet must be
-  // shared as "Anyone with the link: Viewer" for this fetch to work.
-  // ======================================================================
-  const SHEET_ID = '1qbxHhUBV00GFegD_EB7cM3RVj3u5i4GCWXyFcteEaf4';
-  const CLAIMS_GID = '717711734';   // "A-z Claim" tab
-  const FEEDBACK_GID = '705363476'; // "Negative Feedback" tab
-  const csvUrl = (gid) => `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+const logoutLink = document.getElementById('logoutLink');
+if (logoutLink) {
+logoutLink.addEventListener('click', async (e) => {
+e.preventDefault();
+try { await fetch('/do-logout', { method: 'POST' }); } catch(e2){}
+location.href = '/login';
+});
+}
+// ======================================================================
+// CONFIG — the Google Sheet this page reads from. The sheet must be
+// shared as "Anyone with the link: Viewer" for this fetch to work.
+// ======================================================================
+const SHEET_ID = '1qbxHhUBV00GFegD_EB7cM3RVj3u5i4GCWXyFcteEaf4';
+const CLAIMS_GID = '717711734'; // "A-z Claim" tab
+const FEEDBACK_GID = '705363476'; // "Negative Feedback" tab
+const csvUrl = (gid) => `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
 
-  // ---------------------------------------------------------------------
-  // CSV parsing (RFC4180-ish: quoted fields, embedded commas/newlines, "")
-  // ---------------------------------------------------------------------
-  function parseCSV(text){
-    const rows = [];
-    let row = [], field = '', inQuotes = false;
-    for (let i = 0; i < text.length; i++){
-      const c = text[i];
-      if (inQuotes){
-        if (c === '"'){
-          if (text[i+1] === '"'){ field += '"'; i++; }
-          else { inQuotes = false; }
-        } else field += c;
-      } else {
-        if (c === '"') inQuotes = true;
-        else if (c === ','){ row.push(field); field = ''; }
-        else if (c === '\r'){ /* skip, \n handles the break */ }
-        else if (c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
-        else field += c;
-      }
-    }
-    if (field.length || row.length){ row.push(field); rows.push(row); }
-    if (!rows.length) return [];
-    const header = rows[0];
-    return rows.slice(1)
-      .filter(r => r.some(v => v && v.trim()))
-      .map(r => { const o = {}; header.forEach((h,i)=> o[h.trim()] = (r[i]||'').trim()); return o; });
-  }
+// ---------------------------------------------------------------------
+// CSV parsing (RFC4180-ish: quoted fields, embedded commas/newlines, "")
+// ---------------------------------------------------------------------
+function parseCSV(text){
+const rows = [];
+let row = [], field = '', inQuotes = false;
+for (let i = 0; i < text.length; i++){
+const c = text[i];
+if (inQuotes){
+if (c === '"'){
+if (text[i+1] === '"'){ field += '"'; i++; }
+else { inQuotes = false; }
+} else field += c;
+} else {
+if (c === '"') inQuotes = true;
+else if (c === ','){ row.push(field); field = ''; }
+else if (c === '\r'){ /* skip, \n handles the break */ }
+else if (c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+else field += c;
+}
+}
+if (field.length || row.length){ row.push(field); rows.push(row); }
+if (!rows.length) return [];
+const header = rows[0];
+return rows.slice(1)
+.filter(r => r.some(v => v && v.trim()))
+.map(r => { const o = {}; header.forEach((h,i)=> o[h.trim()] = (r[i]||'').trim()); return o; });
+}
 
-  // ---------------------------------------------------------------------
-  // Field normalizers (mirrors the cleanup used when this dashboard was
-  // first built from a snapshot of the sheet)
-  // ---------------------------------------------------------------------
-  const MONTHS = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
-  const MON3 = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
-  function parseDate(s){
-    if (!s) return null;
-    s = s.trim();
-    if (!s || /^(cannot appeal|no appeal)$/i.test(s)) return null;
-    let m = s.match(/^(\d{1,2}) ([A-Za-z]+) (\d{4})$/);
-    if (m){ const mon = MONTHS[m[2].toLowerCase()]; if (mon) return `${m[3]}-${String(mon).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`; }
-    m = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
-    if (m){ const mon = MON3[m[2].toLowerCase()]; if (mon){ const yr = m[3].length===2 ? `20${m[3]}` : m[3]; return `${yr}-${String(mon).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`; } }
-    m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (m) return `${m[3]}-${m[1]}-${m[2]}`;
-    m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (m) return s;
-    return null;
-  }
-  function clean(s){ return (s||'').replace(/&#13;/g,'').trim(); }
-  function normRefund(s){
-    s = clean(s);
-    if (!s) return 'Pending';
-    const low = s.toLowerCase();
-    if (low.startsWith('seller-funded')) return 'Seller-funded';
-    if (low.startsWith('amazon')) return 'Amazon-funded';
-    return s;
-  }
+// ---------------------------------------------------------------------
+// Field normalizers (mirrors the cleanup used when this dashboard was
+// first built from a snapshot of the sheet)
+// ---------------------------------------------------------------------
+const MONTHS = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+const MON3 = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function parseDate(s){
+if (!s) return null;
+s = s.trim();
+if (!s || /^(cannot appeal|no appeal)$/i.test(s)) return null;
+let m = s.match(/^(\d{1,2}) ([A-Za-z]+) (\d{4})$/);
+if (m){ const mon = MONTHS[m[2].toLowerCase()]; if (mon) return `${m[3]}-${String(mon).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`; }
+m = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
+if (m){ const mon = MON3[m[2].toLowerCase()]; if (mon){ const yr = m[3].length===2 ? `20${m[3]}` : m[3]; return `${yr}-${String(mon).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`; } }
+m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+if (m) return `${m[3]}-${m[1]}-${m[2]}`;
+m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+if (m) return s;
+return null;
+}
+function clean(s){ return (s||'').replace(/&#13;/g,'').trim(); }
+function normRefund(s){
+s = clean(s);
+if (!s) return 'Pending';
+const low = s.toLowerCase();
+if (low.startsWith('seller-funded')) return 'Seller-funded';
+if (low.startsWith('amazon')) return 'Amazon-funded';
+return s;
+}
 
-  function buildClaims(rows){
-    const out = [];
-    rows.forEach(r=>{
-      const cd = parseDate(r['Claim Date']);
-      if (!cd) return;
-      const odrRaw = clean(r['Order Defect Rate (ODR) impacted']).toLowerCase();
-      const odr = odrRaw === 'yes' ? 'Impacted' : odrRaw === 'no' ? 'Not impacted' : 'Pending';
-      out.push({
-        date: cd,
-        account: clean(r['Account']),
-        orderId: clean(r['Amazon Order ID']),
-        odrImpacted: odr,
-        status: clean(r['Claim Status']) || 'Pending',
-        issue: clean(r['Customer Issue']) || 'Unspecified',
-        comments: clean(r['Customer comments']),
-        appealDate: parseDate(r['Appeal Date']),
-        remarks: clean(r['Remarks']),
-        refundStatus: normRefund(r['Refund Status']),
-        agent: clean(r['Agent Name']),
-      });
-    });
-    return out;
-  }
-  function buildFeedback(rows){
-    const out = [];
-    rows.forEach(r=>{
-      const fd = parseDate(r['Date']);
-      if (!fd) return;
-      const ratingRaw = clean(r['Rating']);
-      out.push({
-        date: fd,
-        account: clean(r['Account']),
-        rating: /^\d+$/.test(ratingRaw) ? parseInt(ratingRaw,10) : null,
-        orderId: clean(r['Order ID']),
-        comments: clean(r['Comments']),
-        reason: clean(r['Reason']) || 'Not specified',
-        status: clean(r['Status']) || 'Pending',
-        remarks: clean(r['Remarks']),
-        agent: clean(r['Agent Name']),
-      });
-    });
-    return out;
-  }
+function buildClaims(rows){
+const out = [];
+rows.forEach(r=>{
+const cd = parseDate(r['Claim Date']);
+if (!cd) return;
+const odrRaw = clean(r['Order Defect Rate (ODR) impacted']).toLowerCase();
+const odr = odrRaw === 'yes' ? 'Impacted' : odrRaw === 'no' ? 'Not impacted' : 'Pending';
+out.push({
+date: cd,
+account: clean(r['Account']),
+orderId: clean(r['Amazon Order ID']),
+odrImpacted: odr,
+status: clean(r['Claim Status']) || 'Pending',
+issue: clean(r['Customer Issue']) || 'Unspecified',
+comments: clean(r['Customer comments']),
+appealDate: parseDate(r['Appeal Date']),
+remarks: clean(r['Remarks']),
+refundStatus: normRefund(r['Refund Status']),
+agent: clean(r['Agent Name']),
+});
+});
+return out;
+}
+function buildFeedback(rows){
+const out = [];
+rows.forEach(r=>{
+const fd = parseDate(r['Date']);
+if (!fd) return;
+const ratingRaw = clean(r['Rating']);
+out.push({
+date: fd,
+account: clean(r['Account']),
+rating: /^\d+$/.test(ratingRaw) ? parseInt(ratingRaw,10) : null,
+orderId: clean(r['Order ID']),
+comments: clean(r['Comments']),
+reason: clean(r['Reason']) || 'Not specified',
+status: clean(r['Status']) || 'Pending',
+remarks: clean(r['Remarks']),
+agent: clean(r['Agent Name']),
+});
+});
+return out;
+}
 
-  // ---------------------------------------------------------------------
-  // Fetch + orchestration
-  // ---------------------------------------------------------------------
-  let DATA = { accounts: [], claims: [], feedback: [] };
-  const statusDot = document.getElementById('statusDot');
-  const lastRefreshEl = document.getElementById('lastRefresh');
-  const errorBar = document.getElementById('errorBar');
-  const errorMsg = document.getElementById('errorMsg');
-  const refreshBtn = document.getElementById('refreshBtn');
+// ---------------------------------------------------------------------
+// Fetch + orchestration
+// ---------------------------------------------------------------------
+let DATA = { accounts: [], claims: [], feedback: [] };
+const statusDot = document.getElementById('statusDot');
+const lastRefreshEl = document.getElementById('lastRefresh');
+const errorBar = document.getElementById('errorBar');
+const errorMsg = document.getElementById('errorMsg');
+const refreshBtn = document.getElementById('refreshBtn');
 
-  async function fetchCsv(gid){
-    const res = await fetch(csvUrl(gid), { cache: 'no-store' });
-    if (!res.ok) throw new Error(`Sheet responded with HTTP ${res.status}. Make sure it's shared as "Anyone with the link: Viewer".`);
-    const text = await res.text();
-    if (/^<!DOCTYPE html|^<html/i.test(text.trim())){
-      throw new Error('Got a login page instead of CSV — the sheet is probably not shared as "Anyone with the link: Viewer" yet.');
-    }
-    return parseCSV(text);
-  }
+async function fetchCsv(gid){
+const res = await fetch(csvUrl(gid), { cache: 'no-store' });
+if (!res.ok) throw new Error(`Sheet responded with HTTP ${res.status}. Make sure it's shared as "Anyone with the link: Viewer".`);
+const text = await res.text();
+if (/^<!DOCTYPE html|^<html/i.test(text.trim())){
+throw new Error('Got a login page instead of CSV — the sheet is probably not shared as "Anyone with the link: Viewer" yet.');
+}
+return parseCSV(text);
+}
 
-  async function loadData(){
-    refreshBtn.classList.add('spinning');
-    refreshBtn.disabled = true;
-    errorBar.classList.remove('show');
-    try {
-      const [claimRows, fbRows] = await Promise.all([ fetchCsv(CLAIMS_GID), fetchCsv(FEEDBACK_GID) ]);
-      const claims = buildClaims(claimRows);
-      const feedback = buildFeedback(fbRows);
-      const accounts = Array.from(new Set(claims.map(c=>c.account).concat(feedback.map(f=>f.account)))).filter(Boolean).sort();
-      DATA = { accounts, claims, feedback };
-      const allDates = claims.map(c=>c.date).concat(feedback.map(f=>f.date)).sort();
-      if (allDates.length){
-        dateFromInput.max = allDates[allDates.length-1];
-        dateToInput.max = allDates[allDates.length-1];
-        dateFromInput.min = allDates[0];
-        dateToInput.min = allDates[0];
-      }
-      statusDot.className = 'dot';
-      const now = new Date();
-      lastRefreshEl.textContent = 'Live · fetched ' + now.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}) + ' · ' + (claims.length+feedback.length) + ' rows';
-      rebuildAccountOptions();
-      render();
-    } catch(err){
-      statusDot.className = 'dot err';
-      lastRefreshEl.textContent = 'Fetch failed';
-      errorMsg.textContent = err.message || String(err);
-      errorBar.classList.add('show');
-      console.error('ODR Pulse Live fetch error:', err);
-    } finally {
-      refreshBtn.classList.remove('spinning');
-      refreshBtn.disabled = false;
-    }
-  }
+async function loadData(){
+refreshBtn.classList.add('spinning');
+refreshBtn.disabled = true;
+errorBar.classList.remove('show');
+try {
+const [claimRows, fbRows] = await Promise.all([ fetchCsv(CLAIMS_GID), fetchCsv(FEEDBACK_GID) ]);
+const claims = buildClaims(claimRows);
+const feedback = buildFeedback(fbRows);
+const accounts = Array.from(new Set(claims.map(c=>c.account).concat(feedback.map(f=>f.account)))).filter(Boolean).sort();
+DATA = { accounts, claims, feedback };
+const allDates = claims.map(c=>c.date).concat(feedback.map(f=>f.date)).sort();
+if (allDates.length){
+dateFromInput.max = allDates[allDates.length-1];
+dateToInput.max = allDates[allDates.length-1];
+dateFromInput.min = allDates[0];
+dateToInput.min = allDates[0];
+}
+statusDot.className = 'dot';
+const now = new Date();
+lastRefreshEl.textContent = 'Live · fetched ' + now.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}) + ' · ' + (claims.length+feedback.length) + ' rows';
+rebuildAccountOptions();
+render();
+} catch(err){
+statusDot.className = 'dot err';
+lastRefreshEl.textContent = 'Fetch failed';
+errorMsg.textContent = err.message || String(err);
+errorBar.classList.add('show');
+console.error('ODR Pulse Live fetch error:', err);
+} finally {
+refreshBtn.classList.remove('spinning');
+refreshBtn.disabled = false;
+}
+}
 
-  refreshBtn.addEventListener('click', loadData);
-  // auto-refresh in the background every 5 minutes while the tab stays open
-  setInterval(()=>{ if (document.visibilityState === 'visible') loadData(); }, 5*60*1000);
+refreshBtn.addEventListener('click', loadData);
+// auto-refresh in the background every 5 minutes while the tab stays open
+setInterval(()=>{ if (document.visibilityState === 'visible') loadData(); }, 5*60*1000);
 
-  // ---------------------------------------------------------------------
-  // UI: filters
-  // ---------------------------------------------------------------------
-  function cv(name){ return getComputedStyle(document.body).getPropertyValue(name).trim(); }
-  const HAS_CHART = (typeof Chart !== 'undefined');
-  const state = { account: 'all', days: 30, dateFrom: null, dateTo: null };
+// ---------------------------------------------------------------------
+// UI: filters
+// ---------------------------------------------------------------------
+function cv(name){ return getComputedStyle(document.body).getPropertyValue(name).trim(); }
+const HAS_CHART = (typeof Chart !== 'undefined');
+const state = { account: 'all', days: 30, dateFrom: null, dateTo: null };
 
-  const acctSelect = document.getElementById('acctSelect');
-  function rebuildAccountOptions(){
-    const prev = state.account;
-    acctSelect.innerHTML = '<option value="all">All accounts</option>';
-    DATA.accounts.forEach(a=>{
-      const o = document.createElement('option'); o.value = a; o.textContent = a;
-      acctSelect.appendChild(o);
-    });
-    // keep the previous selection if it still exists, else fall back to "all"
-    state.account = DATA.accounts.includes(prev) ? prev : 'all';
-    acctSelect.value = state.account;
-  }
-  acctSelect.addEventListener('change', e=>{ state.account = e.target.value; render(); });
+const acctSelect = document.getElementById('acctSelect');
+function rebuildAccountOptions(){
+const prev = state.account;
+acctSelect.innerHTML = '<option value="all">All accounts</option>';
+DATA.accounts.forEach(a=>{
+const o = document.createElement('option'); o.value = a; o.textContent = a;
+acctSelect.appendChild(o);
+});
+// keep the previous selection if it still exists, else fall back to "all"
+state.account = DATA.accounts.includes(prev) ? prev : 'all';
+acctSelect.value = state.account;
+}
+acctSelect.addEventListener('change', e=>{ state.account = e.target.value; render(); });
 
-  const daySeg = document.getElementById('daySeg');
-  const dateFromInput = document.getElementById('dateFromInput');
-  const dateToInput = document.getElementById('dateToInput');
-  const dateClearBtn = document.getElementById('dateClearBtn');
+const daySeg = document.getElementById('daySeg');
+const dateFromInput = document.getElementById('dateFromInput');
+const dateToInput = document.getElementById('dateToInput');
+const dateClearBtn = document.getElementById('dateClearBtn');
 
-  function clearDateFilter(){
-    state.dateFrom = null;
-    state.dateTo = null;
-    dateFromInput.value = '';
-    dateToInput.value = '';
-    dateClearBtn.classList.remove('show');
-  }
-  function updateClearBtn(){
-    dateClearBtn.classList.toggle('show', !!(state.dateFrom || state.dateTo));
-  }
+function clearDateFilter(){
+state.dateFrom = null;
+state.dateTo = null;
+dateFromInput.value = '';
+dateToInput.value = '';
+dateClearBtn.classList.remove('show');
+}
+function updateClearBtn(){
+dateClearBtn.classList.toggle('show', !!(state.dateFrom || state.dateTo));
+}
 
-  daySeg.querySelectorAll('button').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      state.days = +btn.dataset.days;
-      clearDateFilter();
-      daySeg.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b===btn));
-      render();
-    });
-  });
-  daySeg.querySelector('[data-days="30"]').classList.add('active');
+daySeg.querySelectorAll('button').forEach(btn=>{
+btn.addEventListener('click', ()=>{
+state.days = +btn.dataset.days;
+clearDateFilter();
+daySeg.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b===btn));
+render();
+});
+});
+daySeg.querySelector('[data-days="30"]').classList.add('active');
 
-  function onRangeChange(){
-    state.dateFrom = dateFromInput.value || null;
-    state.dateTo = dateToInput.value || null;
-    if (state.dateFrom || state.dateTo){
-      daySeg.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
-    }
-    updateClearBtn();
-    render();
-  }
-  dateFromInput.addEventListener('change', onRangeChange);
-  dateToInput.addEventListener('change', onRangeChange);
-  dateClearBtn.addEventListener('click', ()=>{
-    clearDateFilter();
-    daySeg.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.days === String(state.days)));
-    render();
-  });
+function onRangeChange(){
+state.dateFrom = dateFromInput.value || null;
+state.dateTo = dateToInput.value || null;
+if (state.dateFrom || state.dateTo){
+daySeg.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+}
+updateClearBtn();
+render();
+}
+dateFromInput.addEventListener('change', onRangeChange);
+dateToInput.addEventListener('change', onRangeChange);
+dateClearBtn.addEventListener('click', ()=>{
+clearDateFilter();
+daySeg.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.days === String(state.days)));
+render();
+});
 
-  function refDate(){
-    const allDates = DATA.claims.map(c=>c.date).concat(DATA.feedback.map(f=>f.date)).sort();
-    return allDates.length ? new Date(allDates[allDates.length-1] + 'T00:00:00') : new Date();
-  }
-  function inWindow(dateStr, REF){
-    const d = new Date(dateStr + 'T00:00:00');
-    const diffDays = (REF - d) / 86400000;
-    return diffDays >= 0 && diffDays < state.days;
-  }
-  function matchDate(dateStr){
-    if (state.dateFrom || state.dateTo){
-      if (state.dateFrom && dateStr < state.dateFrom) return false;
-      if (state.dateTo && dateStr > state.dateTo) return false;
-      return true;
-    }
-    return inWindow(dateStr, refDate());
-  }
-  function matchAccount(a){ return state.account === 'all' || a === state.account; }
-  function filteredClaims(){ return DATA.claims.filter(c => matchAccount(c.account) && matchDate(c.date)); }
-  function filteredFeedback(){ return DATA.feedback.filter(f => matchAccount(f.account) && matchDate(f.date)); }
+function refDate(){
+const allDates = DATA.claims.map(c=>c.date).concat(DATA.feedback.map(f=>f.date)).sort();
+return allDates.length ? new Date(allDates[allDates.length-1] + 'T00:00:00') : new Date();
+}
+function inWindow(dateStr, REF){
+const d = new Date(dateStr + 'T00:00:00');
+const diffDays = (REF - d) / 86400000;
+return diffDays >= 0 && diffDays < state.days;
+}
+function matchDate(dateStr){
+if (state.dateFrom || state.dateTo){
+if (state.dateFrom && dateStr < state.dateFrom) return false;
+if (state.dateTo && dateStr > state.dateTo) return false;
+return true;
+}
+return inWindow(dateStr, refDate());
+}
+function matchAccount(a){ return state.account === 'all' || a === state.account; }
+function filteredClaims(){ return DATA.claims.filter(c => matchAccount(c.account) && matchDate(c.date)); }
+function filteredFeedback(){ return DATA.feedback.filter(f => matchAccount(f.account) && matchDate(f.date)); }
 
-  // ---------------------------------------------------------------------
-  // Chart-library setup (guarded — falls back to plain bars if it fails)
-  // ---------------------------------------------------------------------
-  let charts = {};
-  function destroy(name){ if (charts[name]){ charts[name].destroy(); delete charts[name]; } }
+// ---------------------------------------------------------------------
+// Chart-library setup (guarded — falls back to plain bars if it fails)
+// ---------------------------------------------------------------------
+let charts = {};
+function destroy(name){ if (charts[name]){ charts[name].destroy(); delete charts[name]; } }
 
-  if (HAS_CHART){
-    Chart.register({
-      id: 'valueLabels',
-      afterDatasetsDraw(chart){
-        const opts = chart.config.options.plugins && chart.config.options.plugins.valueLabels;
-        if (!opts || !opts.display) return;
-        const {ctx} = chart;
-        ctx.save();
-        ctx.fillStyle = opts.color || '#0b0b0b';
-        ctx.font = (opts.font || '800 12px system-ui');
-        ctx.textBaseline = 'middle';
-        chart.data.datasets.forEach((ds, di)=>{
-          const meta = chart.getDatasetMeta(di);
-          meta.data.forEach((el, i)=>{
-            const v = ds.data[i];
-            if (v === undefined || v === null) return;
-            const pos = el.tooltipPosition ? el.tooltipPosition() : {x:el.x, y:el.y};
-            if (chart.config.type === 'bar' && chart.config.options.indexAxis === 'y'){
-              ctx.textAlign = 'left'; ctx.fillText(String(v), pos.x + 6, pos.y);
-            } else {
-              ctx.textAlign = 'center'; ctx.fillText(String(v), pos.x, pos.y - 12);
-            }
-          });
-        });
-        ctx.restore();
-      }
-    });
-    Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
-    Chart.defaults.color = cv('--ink-2');
-    Chart.defaults.borderColor = cv('--grid');
-  }
+if (HAS_CHART){
+Chart.register({
+id: 'valueLabels',
+afterDatasetsDraw(chart){
+const opts = chart.config.options.plugins && chart.config.options.plugins.valueLabels;
+if (!opts || !opts.display) return;
+const {ctx} = chart;
+ctx.save();
+ctx.fillStyle = opts.color || '#0b0b0b';
+ctx.font = (opts.font || '800 12px system-ui');
+ctx.textBaseline = 'middle';
+chart.data.datasets.forEach((ds, di)=>{
+const meta = chart.getDatasetMeta(di);
+meta.data.forEach((el, i)=>{
+const v = ds.data[i];
+if (v === undefined || v === null) return;
+const pos = el.tooltipPosition ? el.tooltipPosition() : {x:el.x, y:el.y};
+if (chart.config.type === 'bar' && chart.config.options.indexAxis === 'y'){
+ctx.textAlign = 'left'; ctx.fillText(String(v), pos.x + 6, pos.y);
+} else {
+ctx.textAlign = 'center'; ctx.fillText(String(v), pos.x, pos.y - 12);
+}
+});
+});
+ctx.restore();
+}
+});
+Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+Chart.defaults.color = cv('--ink-2');
+Chart.defaults.borderColor = cv('--grid');
+}
 
-  function getSlots(canvasId){
-    const canvas = document.getElementById(canvasId);
-    const box = canvas.parentElement;
-    let msg = box.querySelector('.emptymsg');
-    if (!msg){ msg = document.createElement('div'); msg.className='emptymsg';
-      msg.style.cssText='color:var(--muted);font-size:12.5px;padding:8px 0;'; msg.textContent='No rows in this window.'; box.appendChild(msg); }
-    let fb = box.querySelector('.fallbackbars');
-    if (!fb){ fb = document.createElement('div'); fb.className='fallbackbars'; box.appendChild(fb); }
-    return { canvas, box, msg, fb };
-  }
-  function setSlotState(canvasId, mode){
-    const { canvas, msg, fb } = getSlots(canvasId);
-    canvas.style.display = (mode === 'chart') ? '' : 'none';
-    msg.style.display = (mode === 'empty') ? '' : 'none';
-    fb.style.display = (mode === 'fallback') ? '' : 'none';
-  }
-  function fallbackBars(canvasId, entries, colorFn){
-    const { box, fb } = getSlots(canvasId);
-    setSlotState(canvasId, 'fallback');
-    box.style.height = 'auto';
-    const max = Math.max(1, ...entries.map(e=>e[1]));
-    fb.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;padding:4px 0;">' +
-      entries.map(([label,val])=>{
-        const pct = Math.round((val/max)*100);
-        const color = typeof colorFn === 'function' ? colorFn(label) : colorFn;
-        return `<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;">
-          <div style="flex:0 0 auto;min-width:120px;max-width:160px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</div>
-          <div style="flex:1;background:var(--surface-2);border-radius:5px;height:16px;position:relative;">
-            <div style="width:${pct}%;background:${color};height:100%;border-radius:5px;"></div>
-          </div>
-          <div style="flex:0 0 30px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">${val}</div>
-        </div>`;
-      }).join('') + '</div>';
-  }
+function getSlots(canvasId){
+const canvas = document.getElementById(canvasId);
+const box = canvas.parentElement;
+let msg = box.querySelector('.emptymsg');
+if (!msg){ msg = document.createElement('div'); msg.className='emptymsg';
+msg.style.cssText='color:var(--muted);font-size:12.5px;padding:8px 0;'; msg.textContent='No rows in this window.'; box.appendChild(msg); }
+let fb = box.querySelector('.fallbackbars');
+if (!fb){ fb = document.createElement('div'); fb.className='fallbackbars'; box.appendChild(fb); }
+return { canvas, box, msg, fb };
+}
+function setSlotState(canvasId, mode){
+const { canvas, msg, fb } = getSlots(canvasId);
+canvas.style.display = (mode === 'chart') ? '' : 'none';
+msg.style.display = (mode === 'empty') ? '' : 'none';
+fb.style.display = (mode === 'fallback') ? '' : 'none';
+}
+function fallbackBars(canvasId, entries, colorFn){
+const { box, fb } = getSlots(canvasId);
+setSlotState(canvasId, 'fallback');
+box.style.height = 'auto';
+const max = Math.max(1, ...entries.map(e=>e[1]));
+fb.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;padding:4px 0;">' +
+entries.map(([label,val])=>{
+const pct = Math.round((val/max)*100);
+const color = typeof colorFn === 'function' ? colorFn(label) : colorFn;
+return `<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;">
+<div style="flex:0 0 auto;min-width:120px;max-width:160px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</div>
+<div style="flex:1;background:var(--surface-2);border-radius:5px;height:16px;position:relative;">
+<div style="width:${pct}%;background:${color};height:100%;border-radius:5px;"></div>
+</div>
+<div style="flex:0 0 30px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">${val}</div>
+</div>`;
+}).join('') + '</div>';
+}
 
-  function tooltipOpts(){
-    return { backgroundColor: cv('--surface'), titleColor: cv('--ink'), bodyColor: cv('--ink-2'),
-      borderColor: cv('--border'), borderWidth:1, padding:10, cornerRadius:8,
-      titleFont:{weight:'700', size:12}, bodyFont:{size:12},
-      callbacks:{ label:(c)=>{
-        const total = c.dataset.data.reduce((a,b)=>a+b,0);
-        return `${c.label}: ${c.parsed.x ?? c.parsed.y} (${total?Math.round(((c.parsed.x??c.parsed.y)/total)*100):0}%)`;
-      }}
-    };
-  }
-  function countBy(arr, key){ const m = {}; arr.forEach(x=>{ const k = x[key] || 'Unspecified'; m[k] = (m[k]||0)+1; }); return m; }
-  function sortedEntries(counts, fixedOrder){
-    let entries = Object.entries(counts);
-    if (fixedOrder) entries = fixedOrder.filter(k=>counts[k]!==undefined).map(k=>[k, counts[k]]);
-    else entries.sort((a,b)=>b[1]-a[1]);
-    return entries;
-  }
+function tooltipOpts(){
+return { backgroundColor: cv('--surface'), titleColor: cv('--ink'), bodyColor: cv('--ink-2'),
+borderColor: cv('--border'), borderWidth:1, padding:10, cornerRadius:8,
+titleFont:{weight:'700', size:12}, bodyFont:{size:12},
+callbacks:{ label:(c)=>{
+const total = c.dataset.data.reduce((a,b)=>a+b,0);
+return `${c.label}: ${c.parsed.x ?? c.parsed.y} (${total?Math.round(((c.parsed.x??c.parsed.y)/total)*100):0}%)`;
+}}
+};
+}
+function countBy(arr, key){ const m = {}; arr.forEach(x=>{ const k = x[key] || 'Unspecified'; m[k] = (m[k]||0)+1; }); return m; }
+function sortedEntries(counts, fixedOrder){
+let entries = Object.entries(counts);
+if (fixedOrder) entries = fixedOrder.filter(k=>counts[k]!==undefined).map(k=>[k, counts[k]]);
+else entries.sort((a,b)=>b[1]-a[1]);
+return entries;
+}
 
-  function vbar(id, name, entries, colorFn, elId){
-    const total = entries.reduce((s,e)=>s+e[1],0);
-    document.getElementById(elId).textContent = total ? `${total} total` : '0 total';
-    if (!entries.length){ destroy(name); setSlotState(id, 'empty'); return; }
-    if (!HAS_CHART){ fallbackBars(id, entries, colorFn); return; }
-    setSlotState(id, 'chart'); destroy(name);
-    const labels = entries.map(e=>e[0]), values = entries.map(e=>e[1]), colors = labels.map(colorFn);
-    charts[name] = new Chart(document.getElementById(id), {
-      type:'bar',
-      data:{ labels, datasets:[{ data: values, backgroundColor: colors, borderRadius:6, maxBarThickness:64 }] },
-      options:{ responsive:true, maintainAspectRatio:false, layout:{ padding:{ top:22 } },
-        scales:{ x:{ grid:{display:false}, border:{color:cv('--baseline')}, ticks:{color:cv('--ink-2'), font:{size:11.5, weight:'600'}} },
-                 y:{ display:false, beginAtZero:true, grace:'18%' } },
-        plugins:{ legend:{display:false}, tooltip: tooltipOpts(),
-          valueLabels:{ display:true, color:cv('--ink'), font:'800 13px system-ui' } } }
-    });
-  }
-  function hbar(id, name, entries, color, elId){
-    const colorFn = typeof color === 'function' ? color : (()=>color);
-    const total = entries.reduce((s,e)=>s+e[1],0);
-    document.getElementById(elId).textContent = total ? `${total} total` : '0 total';
-    if (!entries.length){ destroy(name); setSlotState(id, 'empty'); return; }
-    if (!HAS_CHART){ fallbackBars(id, entries, colorFn); return; }
-    setSlotState(id, 'chart'); destroy(name);
-    const labels = entries.map(e=>e[0]), values = entries.map(e=>e[1]), colors = labels.map(colorFn);
-    const h = Math.max(160, labels.length * 34);
-    document.getElementById(id).parentElement.style.height = h + 'px';
-    charts[name] = new Chart(document.getElementById(id), {
-      type:'bar',
-      data:{ labels, datasets:[{ data: values, backgroundColor: colors, borderRadius:5, maxBarThickness:22 }] },
-      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{ padding:{ right:34 } },
-        scales:{ x:{ display:false, beginAtZero:true, grace:'10%' },
-                 y:{ grid:{display:false}, border:{display:false}, ticks:{color:cv('--ink-2'), font:{size:11.5}} } },
-        plugins:{ legend:{display:false}, tooltip: tooltipOpts(),
-          valueLabels:{ display:true, color:cv('--ink'), font:'800 12px system-ui' } } }
-    });
-  }
+function vbar(id, name, entries, colorFn, elId){
+const total = entries.reduce((s,e)=>s+e[1],0);
+document.getElementById(elId).textContent = total ? `${total} total` : '0 total';
+if (!entries.length){ destroy(name); setSlotState(id, 'empty'); return; }
+if (!HAS_CHART){ fallbackBars(id, entries, colorFn); return; }
+setSlotState(id, 'chart'); destroy(name);
+const labels = entries.map(e=>e[0]), values = entries.map(e=>e[1]), colors = labels.map(colorFn);
+charts[name] = new Chart(document.getElementById(id), {
+type:'bar',
+data:{ labels, datasets:[{ data: values, backgroundColor: colors, borderRadius:6, maxBarThickness:64 }] },
+options:{ responsive:true, maintainAspectRatio:false, layout:{ padding:{ top:22 } },
+scales:{ x:{ grid:{display:false}, border:{color:cv('--baseline')}, ticks:{color:cv('--ink-2'), font:{size:11.5, weight:'600'}} },
+y:{ display:false, beginAtZero:true, grace:'18%' } },
+plugins:{ legend:{display:false}, tooltip: tooltipOpts(),
+valueLabels:{ display:true, color:cv('--ink'), font:'800 13px system-ui' } } }
+});
+}
+function hbar(id, name, entries, color, elId){
+const colorFn = typeof color === 'function' ? color : (()=>color);
+const total = entries.reduce((s,e)=>s+e[1],0);
+document.getElementById(elId).textContent = total ? `${total} total` : '0 total';
+if (!entries.length){ destroy(name); setSlotState(id, 'empty'); return; }
+if (!HAS_CHART){ fallbackBars(id, entries, colorFn); return; }
+setSlotState(id, 'chart'); destroy(name);
+const labels = entries.map(e=>e[0]), values = entries.map(e=>e[1]), colors = labels.map(colorFn);
+const h = Math.max(160, labels.length * 34);
+document.getElementById(id).parentElement.style.height = h + 'px';
+charts[name] = new Chart(document.getElementById(id), {
+type:'bar',
+data:{ labels, datasets:[{ data: values, backgroundColor: colors, borderRadius:5, maxBarThickness:22 }] },
+options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{ padding:{ right:34 } },
+scales:{ x:{ display:false, beginAtZero:true, grace:'10%' },
+y:{ grid:{display:false}, border:{display:false}, ticks:{color:cv('--ink-2'), font:{size:11.5}} } },
+plugins:{ legend:{display:false}, tooltip: tooltipOpts(),
+valueLabels:{ display:true, color:cv('--ink'), font:'800 12px system-ui' } } }
+});
+}
 
-  function renderAgentTable(claims, feedback){
-    const claimCounts = {}, fbCounts = {};
-    claims.forEach(c=>{ if (c.agent) claimCounts[c.agent] = (claimCounts[c.agent]||0) + 1; });
-    feedback.forEach(f=>{ if (f.agent) fbCounts[f.agent] = (fbCounts[f.agent]||0) + 1; });
-    const agents = Array.from(new Set([...Object.keys(claimCounts), ...Object.keys(fbCounts)]))
-      .sort((a,b)=> ((claimCounts[b]||0)+(fbCounts[b]||0)) - ((claimCounts[a]||0)+(fbCounts[a]||0)));
-    const wrap = document.getElementById('agentTable');
-    document.getElementById('cnt-agent').textContent = agents.length ? `${agents.length} agent${agents.length>1?'s':''}` : '';
-    if (!agents.length){
-      wrap.innerHTML = '<div style="color:var(--muted);font-size:12.5px;padding:6px 0;">No claims or feedback marked as handled by an agent yet for this filter.</div>';
-      return;
-    }
-    const head = `<div class="agentHead"><div>Agent</div><div>Claims</div><div>Feedback</div><div>Total</div></div>`;
-    const rows = agents.map(a=>{
-      const cc = claimCounts[a]||0, fc = fbCounts[a]||0;
-      return `<div class="agentRow">
-        <div class="aname">${a}</div>
-        <div class="anum" style="color:var(--claims-hue)">${cc}</div>
-        <div class="anum" style="color:var(--fb-hue)">${fc}</div>
-        <div class="atot">${cc+fc}</div>
-      </div>`;
-    }).join('');
-    wrap.innerHTML = head + rows;
-  }
+function renderAgentTable(claims, feedback){
+const claimCounts = {}, fbCounts = {};
+claims.forEach(c=>{ if (c.agent) claimCounts[c.agent] = (claimCounts[c.agent]||0) + 1; });
+feedback.forEach(f=>{ if (f.agent) fbCounts[f.agent] = (fbCounts[f.agent]||0) + 1; });
+const agents = Array.from(new Set([...Object.keys(claimCounts), ...Object.keys(fbCounts)]))
+.sort((a,b)=> ((claimCounts[b]||0)+(fbCounts[b]||0)) - ((claimCounts[a]||0)+(fbCounts[a]||0)));
+const wrap = document.getElementById('agentTable');
+document.getElementById('cnt-agent').textContent = agents.length ? `${agents.length} agent${agents.length>1?'s':''}` : '';
+if (!agents.length){
+wrap.innerHTML = '<div style="color:var(--muted);font-size:12.5px;padding:6px 0;">No claims or feedback marked as handled by an agent yet for this filter.</div>';
+return;
+}
+const head = `<div class="agentHead"><div>Agent</div><div>Claims</div><div>Feedback</div><div>Total</div></div>`;
+const rows = agents.map(a=>{
+const cc = claimCounts[a]||0, fc = fbCounts[a]||0;
+return `<div class="agentRow">
+<div class="aname">${a}</div>
+<div class="anum" style="color:var(--claims-hue)">${cc}</div>
+<div class="anum" style="color:var(--fb-hue)">${fc}</div>
+<div class="atot">${cc+fc}</div>
+</div>`;
+}).join('');
+wrap.innerHTML = head + rows;
+}
 
-  function render(){
-   try {
-    const claims = filteredClaims();
-    const feedback = filteredFeedback();
-    // Agent removals follow the same account + date filters as the rest of the dashboard.
-    renderAgentTable(claims, feedback);
+function render(){
+try {
+const claims = filteredClaims();
+const feedback = filteredFeedback();
+// Agent removals follow the same account + date filters as the rest of the dashboard.
+renderAgentTable(claims, feedback);
 
-    document.getElementById('claimsTotal').textContent = claims.length;
-    const odrCounts = countBy(claims, 'odrImpacted');
-    const claimOpen = claims.filter(c=> c.status==='Under review' || c.status==='Awaiting customer response' || c.status==='Action required').length;
-    const refundCounts = countBy(claims, 'refundStatus');
-    document.getElementById('odrPendingFlag').textContent = odrCounts['Pending'] || 0;
-    document.getElementById('claimOpenFlag').textContent = claimOpen;
-    document.getElementById('refundPendingFlag').textContent = refundCounts['Pending'] || 0;
+document.getElementById('claimsTotal').textContent = claims.length;
+const odrCounts = countBy(claims, 'odrImpacted');
+const claimOpen = claims.filter(c=> c.status==='Under review' || c.status==='Awaiting customer response' || c.status==='Action required').length;
+const refundCounts = countBy(claims, 'refundStatus');
+document.getElementById('odrPendingFlag').textContent = odrCounts['Pending'] || 0;
+document.getElementById('claimOpenFlag').textContent = claimOpen;
+document.getElementById('refundPendingFlag').textContent = refundCounts['Pending'] || 0;
 
-    const odrColor = { 'Impacted':cv('--critical'), 'Not impacted':cv('--good'), 'Pending':cv('--warning') };
-    vbar('chartOdr','odr', sortedEntries(odrCounts, null), l=>odrColor[l]||cv('--claims-hue'), 'cnt-odr');
+const odrColor = { 'Impacted':cv('--critical'), 'Not impacted':cv('--good'), 'Pending':cv('--warning') };
+vbar('chartOdr','odr', sortedEntries(odrCounts, null), l=>odrColor[l]||cv('--claims-hue'), 'cnt-odr');
 
-    const statusColor = { 'Granted':cv('--good'), 'Closed':cv('--muted'), 'Under review':cv('--warning'),
-      'Awaiting customer response':cv('--serious'), 'Action required':cv('--critical') };
-    const statusCounts = countBy(claims, 'status');
-    vbar('chartStatus','status', sortedEntries(statusCounts), l=>statusColor[l]||cv('--claims-hue'), 'cnt-status');
+const statusColor = { 'Granted':cv('--good'), 'Closed':cv('--muted'), 'Under review':cv('--warning'),
+'Awaiting customer response':cv('--serious'), 'Action required':cv('--critical') };
+const statusCounts = countBy(claims, 'status');
+vbar('chartStatus','status', sortedEntries(statusCounts), l=>statusColor[l]||cv('--claims-hue'), 'cnt-status');
 
-    const refundColor = { 'Seller-funded':cv('--good'), 'Amazon-funded':cv('--good'), 'Order refunded':cv('--good'),
-      'Claim withdrawn':cv('--muted'), 'No action currently required':cv('--muted'), 'Pending':cv('--warning') };
-    hbar('chartRefund','refund', sortedEntries(refundCounts), l=>refundColor[l]||cv('--claims-hue'), 'cnt-refund');
+const refundColor = { 'Seller-funded':cv('--good'), 'Amazon-funded':cv('--good'), 'Order refunded':cv('--good'),
+'Claim withdrawn':cv('--muted'), 'No action currently required':cv('--muted'), 'Pending':cv('--warning') };
+hbar('chartRefund','refund', sortedEntries(refundCounts), l=>refundColor[l]||cv('--claims-hue'), 'cnt-refund');
 
-    const issueCounts = countBy(claims, 'issue');
-    hbar('chartIssue','issue', sortedEntries(issueCounts), cv('--claims-hue'), 'cnt-issue');
+const issueCounts = countBy(claims, 'issue');
+hbar('chartIssue','issue', sortedEntries(issueCounts), cv('--claims-hue'), 'cnt-issue');
 
-    document.getElementById('fbTotal').textContent = feedback.length;
-    const fbCounts = countBy(feedback, 'status');
-    document.getElementById('fbLiveFlag').textContent = fbCounts['Not Removed'] || 0;
-    document.getElementById('fbRemovedFlag').textContent = fbCounts['Removed'] || 0;
-    document.getElementById('fbPendingFlag').textContent = fbCounts['Pending'] || 0;
+document.getElementById('fbTotal').textContent = feedback.length;
+const fbCounts = countBy(feedback, 'status');
+document.getElementById('fbLiveFlag').textContent = fbCounts['Not Removed'] || 0;
+document.getElementById('fbRemovedFlag').textContent = fbCounts['Removed'] || 0;
+document.getElementById('fbPendingFlag').textContent = fbCounts['Pending'] || 0;
 
-    const fbColor = { 'Not Removed':cv('--critical'), 'Removed':cv('--good'), 'Pending':cv('--warning') };
-    vbar('chartFbStatus','fbstatus', sortedEntries(fbCounts), l=>fbColor[l]||cv('--fb-hue'), 'cnt-fbstatus');
+const fbColor = { 'Not Removed':cv('--critical'), 'Removed':cv('--good'), 'Pending':cv('--warning') };
+vbar('chartFbStatus','fbstatus', sortedEntries(fbCounts), l=>fbColor[l]||cv('--fb-hue'), 'cnt-fbstatus');
 
-    const ratingCounts = {
-      '1★': feedback.filter(f=>f.rating===1).length, '2★': feedback.filter(f=>f.rating===2).length,
-      '3★': feedback.filter(f=>f.rating===3).length, '4★': feedback.filter(f=>f.rating===4).length,
-      '5★': feedback.filter(f=>f.rating===5).length,
-    };
-    const ratingColor = { '1★':cv('--critical'), '2★':cv('--serious'), '3★':cv('--warning'),
-      '4★':'color-mix(in srgb, var(--warning) 40%, var(--good))', '5★':cv('--good') };
-    const ratingEntries = ['1★','2★','3★','4★','5★'].map(k=>[k, ratingCounts[k]]);
-    vbar('chartRating','rating', ratingEntries, l=>ratingColor[l], 'cnt-rating');
+const ratingCounts = {
+'1★': feedback.filter(f=>f.rating===1).length, '2★': feedback.filter(f=>f.rating===2).length,
+'3★': feedback.filter(f=>f.rating===3).length, '4★': feedback.filter(f=>f.rating===4).length,
+'5★': feedback.filter(f=>f.rating===5).length,
+};
+const ratingColor = { '1★':cv('--critical'), '2★':cv('--serious'), '3★':cv('--warning'),
+'4★':'color-mix(in srgb, var(--warning) 40%, var(--good))', '5★':cv('--good') };
+const ratingEntries = ['1★','2★','3★','4★','5★'].map(k=>[k, ratingCounts[k]]);
+vbar('chartRating','rating', ratingEntries, l=>ratingColor[l], 'cnt-rating');
 
-    const acctCounts = countBy(feedback, 'account');
-    vbar('chartFbAcct','fbacct', sortedEntries(acctCounts), ()=>cv('--fb-hue'), 'cnt-fbacct');
+const acctCounts = countBy(feedback, 'account');
+vbar('chartFbAcct','fbacct', sortedEntries(acctCounts), ()=>cv('--fb-hue'), 'cnt-fbacct');
 
-    const reasonCounts = countBy(feedback, 'reason');
-    hbar('chartReason','reason', sortedEntries(reasonCounts), cv('--fb-hue'), 'cnt-reason');
-   } catch(err){
-     console.error('ODR Pulse Live render error:', err);
-   }
-  }
+const reasonCounts = countBy(feedback, 'reason');
+hbar('chartReason','reason', sortedEntries(reasonCounts), cv('--fb-hue'), 'cnt-reason');
+} catch(err){
+console.error('ODR Pulse Live render error:', err);
+}
+}
 
-  loadData();
+loadData();
 })();
 </script>
 </body>
