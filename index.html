@@ -325,6 +325,7 @@ Log out
 <div class="flag crit"><div class="fnum" id="fbLiveFlag">0</div><div class="flabel">Still live</div></div>
 <div class="flag ok"><div class="fnum" id="fbRemovedFlag">0</div><div class="flabel">Removed</div></div>
 <div class="flag warn"><div class="fnum" id="fbPendingFlag">0</div><div class="flabel">Pending review</div></div>
+<div class="flag ok"><div class="fnum" id="fbPositiveFlag">0</div><div class="flabel">Positive received</div></div>
 </div>
 </div>
 
@@ -340,13 +341,18 @@ Log out
 <div class="chartbox" style="height:200px"><canvas id="chartRating"></canvas></div>
 </div>
 <div class="card c-span-4">
-<h3>By account <span class="cnt" id="cnt-fbacct"></span></h3>
-<div class="hint">Where negative feedback is concentrated</div>
+<h3>By account (negative) <span class="cnt" id="cnt-fbacct"></span></h3>
+<div class="hint">Where negative feedback (1–3★) is concentrated</div>
 <div class="chartbox" style="height:200px"><canvas id="chartFbAcct"></canvas></div>
+</div>
+<div class="card c-span-4">
+<h3>By account (positive) <span class="cnt" id="cnt-fbacctpos"></span></h3>
+<div class="hint">Where positive feedback (4–5★) is concentrated</div>
+<div class="chartbox" style="height:200px"><canvas id="chartFbAcctPos"></canvas></div>
 </div>
 <div class="card c-span-12">
 <h3>Feedback reason <span class="cnt" id="cnt-reason"></span></h3>
-<div class="hint">Root cause customers cited — highest count first</div>
+<div class="hint">Root cause customers cited for negative feedback — highest count first</div>
 <div class="chartbox" style="height:280px"><canvas id="chartReason"></canvas></div>
 </div>
 </div>
@@ -805,11 +811,17 @@ hbar('chartRefund','refund', sortedEntries(refundCounts), l=>refundColor[l]||cv(
 const issueCounts = countBy(claims, 'issue');
 hbar('chartIssue','issue', sortedEntries(issueCounts), cv('--claims-hue'), 'cnt-issue');
 
-document.getElementById('fbTotal').textContent = feedback.length;
-const fbCounts = countBy(feedback, 'status');
+// Split the combined feedback log into negative (1-3★) and positive (4-5★).
+// Rows with no parseable rating are treated as negative (matches this log's original purpose).
+const negFeedback = feedback.filter(f => !(f.rating >= 4));
+const posFeedback = feedback.filter(f => f.rating >= 4);
+
+document.getElementById('fbTotal').textContent = negFeedback.length;
+const fbCounts = countBy(negFeedback, 'status');
 document.getElementById('fbLiveFlag').textContent = fbCounts['Not Removed'] || 0;
 document.getElementById('fbRemovedFlag').textContent = fbCounts['Removed'] || 0;
 document.getElementById('fbPendingFlag').textContent = fbCounts['Pending'] || 0;
+document.getElementById('fbPositiveFlag').textContent = posFeedback.length;
 
 const fbColor = { 'Not Removed':cv('--critical'), 'Removed':cv('--good'), 'Pending':cv('--warning') };
 vbar('chartFbStatus','fbstatus', sortedEntries(fbCounts), l=>fbColor[l]||cv('--fb-hue'), 'cnt-fbstatus');
@@ -824,10 +836,13 @@ const ratingColor = { '1★':cv('--critical'), '2★':cv('--serious'), '3★':cv
 const ratingEntries = ['1★','2★','3★','4★','5★'].map(k=>[k, ratingCounts[k]]);
 vbar('chartRating','rating', ratingEntries, l=>ratingColor[l], 'cnt-rating');
 
-const acctCounts = countBy(feedback, 'account');
+const acctCounts = countBy(negFeedback, 'account');
 vbar('chartFbAcct','fbacct', sortedEntries(acctCounts), ()=>cv('--fb-hue'), 'cnt-fbacct');
 
-const reasonCounts = countBy(feedback, 'reason');
+const posAcctCounts = countBy(posFeedback, 'account');
+vbar('chartFbAcctPos','fbacctpos', sortedEntries(posAcctCounts), ()=>cv('--good'), 'cnt-fbacctpos');
+
+const reasonCounts = countBy(negFeedback, 'reason');
 hbar('chartReason','reason', sortedEntries(reasonCounts), cv('--fb-hue'), 'cnt-reason');
 } catch(err){
 console.error('ODR Pulse Live render error:', err);
