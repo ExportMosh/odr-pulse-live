@@ -342,12 +342,20 @@
     </div>
   </div>
 
-  <footer>ODR Pulse · Live · refreshes automatically on every load</footer>
+  <footer>ODR Pulse · Live · refreshes automatically on every load · <a href="#" id="logoutLink" style="color:inherit;text-decoration:underline;">Log out</a></footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script>
 (function(){
+  const logoutLink = document.getElementById('logoutLink');
+  if (logoutLink) {
+    logoutLink.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try { await fetch('/do-logout', { method: 'POST' }); } catch(e2){}
+      location.href = '/login.html';
+    });
+  }
   // ======================================================================
   // CONFIG — the Google Sheet this page reads from. The sheet must be
   // shared as "Anyone with the link: Viewer" for this fetch to work.
