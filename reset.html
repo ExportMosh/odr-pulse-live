@@ -1,4 +1,86 @@
 <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ODR Pulse — Reset Password</title>
+<style>
+:root{ color-scheme: light; --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781; --border:rgba(11,11,11,.10); --accent:#2a78d6; --accent-ink:#ffffff; --critical:#d03b3b; }
+@media (prefers-color-scheme: dark){ :root{ color-scheme: dark; --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781; --border:rgba(255,255,255,.12);} }
+*{box-sizing:border-box;}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--page);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;}
+.card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;box-shadow:0 8px 24px rgba(11,11,11,.06);}
+h1{font-size:20px;margin:0 0 4px;}
+p.sub{color:var(--muted);font-size:13px;margin:0 0 20px;}
+label{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px;}
+input{width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--border);background:var(--page);color:var(--ink);font-size:14px;margin-bottom:14px;}
+button{width:100%;padding:11px;border-radius:8px;border:none;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:14px;cursor:pointer;}
+button:disabled{opacity:.6;cursor:default;}
+.err{color:var(--critical);font-size:13px;margin:-4px 0 14px;min-height:16px;}
+.foot{margin-top:16px;text-align:center;font-size:13px;}
+a{color:var(--accent);text-decoration:none;}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Reset password</h1>
+  <div id="step1">
+  <p class="sub">We'll email a one-time code to the registered address.</p>p>
+  <div class="err" id="err1"></div>div>
+  <button id="sendBtn">Send code</button>button>
+  </div>div>
+  <form id="step2" class="hidden">
+  <p class="sub">Enter the code we emailed you and your new password.</p>p>
+  <label for="otp">Verification code</label>label>
+  <input type="text" id="otp" inputmode="numeric" maxlength="6" required>
+  <label for="pw">New password</label>label>
+  <input type="password" id="pw" autocomplete="new-password" minlength="8" required>
+  <label for="pw2">Confirm password</label>label>
+  <input type="password" id="pw2" autocomplete="new-password" minlength="8" required>
+  <div class="err" id="err2"></div>div>
+  <button type="submit" id="resetBtn">Reset password</button>button>
+  </form>form>
+  <div class="foot"><a href="/login">Back to login</a>a></div>div>
+  </div>div>
+<script>
+  const sendBtn = document.getElementById('sendBtn');
+  const err1 = document.getElementById('err1');
+  const step1 = document.getElementById('step1');
+  const step2 = document.getElementById('step2');
+  sendBtn.addEventListener('click', async () => {
+    err1.textContent = '';
+    sendBtn.disabled = true; sendBtn.textContent = 'Sending…';
+    try {
+      const res = await fetch('/do-request-otp', { method:'POST' });
+      const data = await res.json();
+      if (res.ok) { step1.classList.add('hidden'); step2.classList.remove('hidden'); }
+      else { err1.textContent = data.error || 'Could not send code.'; sendBtn.disabled=false; sendBtn.textContent='Send code'; }
+    } catch(e){ err1.textContent = 'Network error.'; sendBtn.disabled=false; sendBtn.textContent='Send code'; }
+  });
+  const err2 = document.getElementById('err2');
+  const resetBtn = document.getElementById('resetBtn');
+  step2.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err2.textContent = '';
+    const pw = document.getElementById('pw').value;
+    const pw2 = document.getElementById('pw2').value;
+    if (pw !== pw2) { err2.textContent = 'Passwords do not match.'; return; }
+    resetBtn.disabled = true; resetBtn.textContent = 'Resetting…';
+    try {
+      const res = await fetch('/do-reset-password', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ otp: document.getElementById('otp').value, password: pw }) });
+      const data = await res.json();
+      if (res.ok) { location.href = '/'; }
+      else { err2.textContent = data.error || 'Something went wrong.'; resetBtn.disabled=false; resetBtn.textContent='Reset password'; }
+    } catch(e2){ err2.textContent = 'Network error.'; resetBtn.disabled=false; resetBtn.textContent='Reset password'; }
+  });
+</script>
+</body>
+</html>html>
+
+</script></h1>
+</body></title>
+</head><!doctype html>
   <html lang="en">
   <head>
   <meta charset="utf-8">
