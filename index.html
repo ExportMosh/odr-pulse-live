@@ -320,7 +320,7 @@ Log out
 <div class="section" id="fbSection">
 <div class="section-head feedback">
 <div class="num" id="fbTotal">0</div>
-<div class="stitle"><div class="eyebrow">Step 2</div><h2>Negative Feedback</h2></div>
+<div class="stitle"><div class="eyebrow">Step 2</div><h2>Feedback</h2></div>
 <div class="flags">
 <div class="flag crit"><div class="fnum" id="fbLiveFlag">0</div><div class="flabel">Still live</div></div>
 <div class="flag ok"><div class="fnum" id="fbRemovedFlag">0</div><div class="flabel">Removed</div></div>
@@ -735,6 +735,18 @@ plugins:{ legend:{display:false}, tooltip: tooltipOpts(),
 valueLabels:{ display:true, color:cv('--ink'), font:'800 13px system-ui' } } }
 });
 }
+function wrapLabel(str, maxLen){
+str = String(str);
+if (str.length <= maxLen) return str;
+const words = str.split(' ');
+const lines = []; let cur = '';
+words.forEach(w=>{
+if ((cur + ' ' + w).trim().length > maxLen){ if (cur) lines.push(cur); cur = w; }
+else cur = (cur + ' ' + w).trim();
+});
+if (cur) lines.push(cur);
+return lines;
+}
 function hbar(id, name, entries, color, elId){
 const colorFn = typeof color === 'function' ? color : (()=>color);
 const total = entries.reduce((s,e)=>s+e[1],0);
@@ -742,15 +754,17 @@ document.getElementById(elId).textContent = total ? `${total} total` : '0 total'
 if (!entries.length){ destroy(name); setSlotState(id, 'empty'); return; }
 if (!HAS_CHART){ fallbackBars(id, entries, colorFn); return; }
 setSlotState(id, 'chart'); destroy(name);
-const labels = entries.map(e=>e[0]), values = entries.map(e=>e[1]), colors = labels.map(colorFn);
-const h = Math.max(160, labels.length * 34);
+const rawLabels = entries.map(e=>e[0]), values = entries.map(e=>e[1]), colors = rawLabels.map(colorFn);
+const labels = rawLabels.map(l=>wrapLabel(l, 26));
+const lineCounts = labels.map(l=> Array.isArray(l) ? l.length : 1);
+const h = Math.max(160, lineCounts.reduce((s,n)=>s+Math.max(n,1)*24, 0) + 20);
 document.getElementById(id).parentElement.style.height = h + 'px';
 charts[name] = new Chart(document.getElementById(id), {
 type:'bar',
 data:{ labels, datasets:[{ data: values, backgroundColor: colors, borderRadius:5, maxBarThickness:22 }] },
 options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{ padding:{ right:34 } },
 scales:{ x:{ display:false, beginAtZero:true, grace:'10%' },
-y:{ grid:{display:false}, border:{display:false}, ticks:{color:cv('--ink-2'), font:{size:11.5}} } },
+y:{ grid:{display:false}, border:{display:false}, ticks:{color:cv('--ink-2'), font:{size:11.5}, autoSkip:false} } },
 plugins:{ legend:{display:false}, tooltip: tooltipOpts(),
 valueLabels:{ display:true, color:cv('--ink'), font:'800 12px system-ui' } } }
 });
