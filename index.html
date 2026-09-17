@@ -160,16 +160,19 @@ width:32px; height:32px; border-radius:8px; cursor:pointer; display:none; align-
 .clearDateBtn:hover{background:var(--surface-2);}
 .spacer{flex:1;}
 
-.agentTable{margin-top:12px;}
-.agentRow, .agentHead{
-display:grid; grid-template-columns:1fr 84px 104px 68px; gap:12px; align-items:center;
-padding:9px 0; border-bottom:1px solid var(--border); font-size:13px;
-}
-.agentHead{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); padding-bottom:8px;}
-.agentRow .aname{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.agentRow .anum{text-align:right; font-variant-numeric:tabular-nums; font-weight:700;}
-.agentRow .atot{text-align:right; font-variant-numeric:tabular-nums; font-weight:800;}
-.agentHead > div:not(:first-child), .agentRow .anum, .agentRow .atot{text-align:right;}
+.agentTable{margin-top:12px; overflow-x:auto;}
+.agentMatrix{width:100%; border-collapse:collapse; font-size:13px; white-space:nowrap;}
+.agentMatrix th, .agentMatrix td{padding:8px 10px; border-bottom:1px solid var(--border);}
+.agentMatrix thead th{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); text-align:right; border-bottom:1px solid var(--border);}
+.agentMatrix thead tr:first-child th{border-bottom:1px solid var(--border);}
+.agentMatrix thead tr:first-child .acctHeadCell{text-align:center; border-left:1px solid var(--border); color:var(--ink-2);}
+.agentMatrix th.aname-h, .agentMatrix th.atot-h{vertical-align:bottom;}
+.agentMatrix th.aname-h{text-align:left;}
+.agentMatrix td.aname{font-weight:700; text-align:left; overflow:hidden; text-overflow:ellipsis; max-width:160px;}
+.agentMatrix td.anum{text-align:right; font-variant-numeric:tabular-nums; font-weight:700;}
+.agentMatrix td.anum.grpstart{border-left:1px solid var(--border);}
+.agentMatrix td.atot{text-align:right; font-variant-numeric:tabular-nums; font-weight:800;}
+.agentMatrix tbody tr:hover{background:var(--surface-2);}
 
 .section{display:flex; flex-direction:column; gap:14px;}
 .section-head{
@@ -771,28 +774,44 @@ valueLabels:{ display:true, color:cv('--ink'), font:'800 12px system-ui' } } }
 }
 
 function renderAgentTable(claims, feedback){
-const claimCounts = {}, fbCounts = {};
-claims.forEach(c=>{ if (c.agent) claimCounts[c.agent] = (claimCounts[c.agent]||0) + 1; });
-feedback.forEach(f=>{ if (f.agent) fbCounts[f.agent] = (fbCounts[f.agent]||0) + 1; });
+// Break counts down per account (not just a flat per-agent total), so it's clear
+// which account each agent's claim withdrawals / feedback removals came from.
+const accounts = state.account === 'all' ? DATA.accounts : [state.account];
+const claimCounts = {}, fbCounts = {}; // counts[agent][account]
+claims.forEach(c=>{
+if (!c.agent) return;
+(claimCounts[c.agent] = claimCounts[c.agent] || {})[c.account] = (claimCounts[c.agent][c.account]||0) + 1;
+});
+feedback.forEach(f=>{
+if (!f.agent) return;
+(fbCounts[f.agent] = fbCounts[f.agent] || {})[f.account] = (fbCounts[f.agent][f.account]||0) + 1;
+});
+const acctTotal = (a, acct) => (claimCounts[a]&&claimCounts[a][acct]||0) + (fbCounts[a]&&fbCounts[a][acct]||0);
+const agentTotal = a => accounts.reduce((s,acct)=> s + acctTotal(a, acct), 0);
 const agents = Array.from(new Set([...Object.keys(claimCounts), ...Object.keys(fbCounts)]))
-.sort((a,b)=> ((claimCounts[b]||0)+(fbCounts[b]||0)) - ((claimCounts[a]||0)+(fbCounts[a]||0)));
+.sort((a,b)=> agentTotal(b) - agentTotal(a));
 const wrap = document.getElementById('agentTable');
 document.getElementById('cnt-agent').textContent = agents.length ? `${agents.length} agent${agents.length>1?'s':''}` : '';
 if (!agents.length){
 wrap.innerHTML = '<div style="color:var(--muted);font-size:12.5px;padding:6px 0;">No claims or feedback marked as handled by an agent yet for this filter.</div>';
 return;
 }
-const head = `<div class="agentHead"><div>Agent</div><div>Claims</div><div>Feedback</div><div>Total</div></div>`;
+const acctHead = accounts.map(acct=>`<th colspan="2" class="acctHeadCell">${acct}</th>`).join('');
+const subHead = accounts.map(()=>`<th>Claims</th><th>Feedback</th>`).join('');
 const rows = agents.map(a=>{
-const cc = claimCounts[a]||0, fc = fbCounts[a]||0;
-return `<div class="agentRow">
-<div class="aname">${a}</div>
-<div class="anum" style="color:var(--claims-hue)">${cc}</div>
-<div class="anum" style="color:var(--fb-hue)">${fc}</div>
-<div class="atot">${cc+fc}</div>
-</div>`;
+const cells = accounts.map(acct=>{
+const cc = (claimCounts[a]&&claimCounts[a][acct])||0, fc = (fbCounts[a]&&fbCounts[a][acct])||0;
+return `<td class="anum grpstart" style="color:var(--claims-hue)">${cc}</td><td class="anum" style="color:var(--fb-hue)">${fc}</td>`;
 }).join('');
-wrap.innerHTML = head + rows;
+return `<tr><td class="aname">${a}</td>${cells}<td class="atot">${agentTotal(a)}</td></tr>`;
+}).join('');
+wrap.innerHTML = `<table class="agentMatrix">
+<thead>
+<tr><th class="aname-h" rowspan="2">Agent</th>${acctHead}<th class="atot-h" rowspan="2">Total</th></tr>
+<tr>${subHead}</tr>
+</thead>
+<tbody>${rows}</tbody>
+</table>`;
 }
 
 function render(){
