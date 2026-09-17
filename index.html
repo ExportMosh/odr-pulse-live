@@ -830,7 +830,7 @@ hbar('chartIssue','issue', sortedEntries(issueCounts), cv('--claims-hue'), 'cnt-
 const negFeedback = feedback.filter(f => !(f.rating >= 4));
 const posFeedback = feedback.filter(f => f.rating >= 4);
 
-document.getElementById('fbTotal').textContent = negFeedback.length;
+document.getElementById('fbTotal').textContent = feedback.length;
 const fbCounts = countBy(negFeedback, 'status');
 document.getElementById('fbLiveFlag').textContent = fbCounts['Not Removed'] || 0;
 document.getElementById('fbRemovedFlag').textContent = fbCounts['Removed'] || 0;
