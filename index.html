@@ -173,6 +173,9 @@ width:32px; height:32px; border-radius:8px; cursor:pointer; display:none; align-
 .agentMatrix td.anum.grpstart{border-left:1px solid var(--border);}
 .agentMatrix td.atot{text-align:right; font-variant-numeric:tabular-nums; font-weight:800;}
 .agentMatrix tbody tr:hover{background:var(--surface-2);}
+.agentMatrix tbody tr.agentTotalsRow{background:var(--surface-2); font-weight:800;}
+.agentMatrix tbody tr.agentTotalsRow td{border-top:2px solid var(--border); border-bottom:none;}
+.agentMatrix tbody tr.agentTotalsRow td.aname{font-weight:800;}
 
 .section{display:flex; flex-direction:column; gap:14px;}
 .section-head{
@@ -786,31 +789,41 @@ feedback.forEach(f=>{
 if (!f.agent) return;
 (fbCounts[f.agent] = fbCounts[f.agent] || {})[f.account] = (fbCounts[f.agent][f.account]||0) + 1;
 });
-const acctTotal = (a, acct) => (claimCounts[a]&&claimCounts[a][acct]||0) + (fbCounts[a]&&fbCounts[a][acct]||0);
-const agentTotal = a => accounts.reduce((s,acct)=> s + acctTotal(a, acct), 0);
+const claimTotalFor = a => accounts.reduce((s,acct)=> s + ((claimCounts[a]&&claimCounts[a][acct])||0), 0);
+const fbTotalFor = a => accounts.reduce((s,acct)=> s + ((fbCounts[a]&&fbCounts[a][acct])||0), 0);
 const agents = Array.from(new Set([...Object.keys(claimCounts), ...Object.keys(fbCounts)]))
-.sort((a,b)=> agentTotal(b) - agentTotal(a));
+.sort((a,b)=> (claimTotalFor(b)+fbTotalFor(b)) - (claimTotalFor(a)+fbTotalFor(a)));
 const wrap = document.getElementById('agentTable');
-document.getElementById('cnt-agent').textContent = agents.length ? `${agents.length} agent${agents.length>1?'s':''}` : '';
+// Two separate grand totals — claims withdrawn and feedback removed are never combined into one number.
+const totalClaimsAll = agents.reduce((s,a)=> s + claimTotalFor(a), 0);
+const totalFbAll = agents.reduce((s,a)=> s + fbTotalFor(a), 0);
+document.getElementById('cnt-agent').textContent = agents.length
+? `${agents.length} agent${agents.length>1?'s':''} · ${totalClaimsAll} claim${totalClaimsAll!==1?'s':''} withdrawn · ${totalFbAll} feedback removed`
+: '';
 if (!agents.length){
 wrap.innerHTML = '<div style="color:var(--muted);font-size:12.5px;padding:6px 0;">No claims or feedback marked as handled by an agent yet for this filter.</div>';
 return;
 }
 const acctHead = accounts.map(acct=>`<th colspan="2" class="acctHeadCell">${acct}</th>`).join('');
-const subHead = accounts.map(()=>`<th>Claims</th><th>Feedback</th>`).join('');
+const subHead = accounts.map(()=>`<th>Claims</th><th>Feedback</th>`).join('') + '<th>Claims</th><th>Feedback</th>';
 const rows = agents.map(a=>{
 const cells = accounts.map(acct=>{
 const cc = (claimCounts[a]&&claimCounts[a][acct])||0, fc = (fbCounts[a]&&fbCounts[a][acct])||0;
 return `<td class="anum grpstart" style="color:var(--claims-hue)">${cc}</td><td class="anum" style="color:var(--fb-hue)">${fc}</td>`;
 }).join('');
-return `<tr><td class="aname">${a}</td>${cells}<td class="atot">${agentTotal(a)}</td></tr>`;
+return `<tr><td class="aname">${a}</td>${cells}<td class="anum atot grpstart" style="color:var(--claims-hue)">${claimTotalFor(a)}</td><td class="anum atot" style="color:var(--fb-hue)">${fbTotalFor(a)}</td></tr>`;
 }).join('');
+const totalsRow = `<tr class="agentTotalsRow"><td class="aname">All agents</td>${accounts.map(acct=>{
+const cc = agents.reduce((s,a)=> s + ((claimCounts[a]&&claimCounts[a][acct])||0), 0);
+const fc = agents.reduce((s,a)=> s + ((fbCounts[a]&&fbCounts[a][acct])||0), 0);
+return `<td class="anum grpstart">${cc}</td><td class="anum">${fc}</td>`;
+}).join('')}<td class="anum atot grpstart">${totalClaimsAll}</td><td class="anum atot">${totalFbAll}</td></tr>`;
 wrap.innerHTML = `<table class="agentMatrix">
 <thead>
-<tr><th class="aname-h" rowspan="2">Agent</th>${acctHead}<th class="atot-h" rowspan="2">Total</th></tr>
+<tr><th class="aname-h" rowspan="2">Agent</th>${acctHead}<th colspan="2" class="acctHeadCell atot-h">Total</th></tr>
 <tr>${subHead}</tr>
 </thead>
-<tbody>${rows}</tbody>
+<tbody>${rows}${totalsRow}</tbody>
 </table>`;
 }
 
