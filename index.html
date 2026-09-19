@@ -354,8 +354,6 @@ Log out
 <h3>By account (negative) <span class="cnt" id="cnt-fbacct"></span></h3>
 <div class="hint">Where negative feedback (1–3★) is concentrated</div>
 <div class="chartbox" style="height:200px"><canvas id="chartFbAcct"></canvas></div>
-<div class="hint" style="margin-top:10px">ODR impact from the tracker — by account, then total</div>
-<div id="fbAcctOdr"></div>
 </div>
 <div class="card c-span-4">
 <h3>By account (positive) <span class="cnt" id="cnt-fbacctpos"></span></h3>
@@ -366,6 +364,11 @@ Log out
 <h3>Removed by account <span class="cnt" id="cnt-fbremoved"></span></h3>
 <div class="hint">Feedback actually removed — 1–2★ only, 3★ is neutral and excluded</div>
 <div class="chartbox" style="height:200px"><canvas id="chartFbRemoved"></canvas></div>
+</div>
+<div class="card c-span-4">
+<h3>ODR impact <span class="cnt" id="cnt-fbacctodr"></span></h3>
+<div class="hint">ODR impact from the tracker — by account, then total</div>
+<div id="fbAcctOdr"></div>
 </div>
 <div class="card c-span-12">
 <h3>Feedback reason <span class="cnt" id="cnt-reason"></span></h3>
@@ -847,6 +850,8 @@ function renderFbAcctOdr(rows){
 const accounts = state.account === 'all' ? DATA.accounts : [state.account];
 const wrap = document.getElementById('fbAcctOdr');
 if (!wrap) return;
+const cntEl = document.getElementById('cnt-fbacctodr');
+if (cntEl) cntEl.textContent = rows.length ? `${rows.length} total` : '';
 const counts = {}; // counts[account][status]
 rows.forEach(f=>{
 (counts[f.account] = counts[f.account] || {})[f.odrImpacted] = (counts[f.account][f.odrImpacted]||0) + 1;
