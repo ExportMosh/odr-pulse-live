@@ -338,7 +338,7 @@ Log out
 <div class="grid">
 <div class="card c-span-4">
 <h3>Removal status <span class="cnt" id="cnt-fbstatus"></span></h3>
-<div class="hint">Removed, still live, or awaiting review</div>
+<div class="hint">Removed, still live, or awaiting review — 1–2★ only, 3★ is neutral and excluded</div>
 <div class="chartbox" style="height:200px"><canvas id="chartFbStatus"></canvas></div>
 </div>
 <div class="card c-span-4">
@@ -863,7 +863,10 @@ const negFeedback = feedback.filter(f => !(f.rating >= 4));
 const posFeedback = feedback.filter(f => f.rating >= 4);
 
 document.getElementById('fbTotal').textContent = feedback.length;
-const fbCounts = countBy(negFeedback, 'status');
+// Removal status only makes sense for genuinely negative feedback (1-2★).
+// 3★ is neutral, so it's excluded from this total and from the pending/removed math.
+const removalFeedback = feedback.filter(f => f.rating === 1 || f.rating === 2);
+const fbCounts = countBy(removalFeedback, 'status');
 document.getElementById('fbLiveFlag').textContent = fbCounts['Not Removed'] || 0;
 document.getElementById('fbRemovedFlag').textContent = fbCounts['Removed'] || 0;
 document.getElementById('fbPendingFlag').textContent = fbCounts['Pending'] || 0;
