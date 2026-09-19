@@ -177,11 +177,14 @@ width:32px; height:32px; border-radius:8px; cursor:pointer; display:none; align-
 .agentMatrix tbody tr.agentTotalsRow td{border-top:2px solid var(--border); border-bottom:none;}
 .agentMatrix tbody tr.agentTotalsRow td.aname{font-weight:800;}
 
-#odrGrid{display:flex; flex-wrap:wrap; gap:14px; margin-top:12px;}
-.odrMini{flex:1 1 200px; min-width:180px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:12px 14px 8px;}
-.odrMini.total{background:color-mix(in srgb, var(--accent) 8%, var(--surface-2));}
-.odrMini .odrMiniTitle{font-size:12.5px; font-weight:700; display:flex; align-items:center; justify-content:space-between; gap:8px;}
-.odrMini .odrMiniTitle .cnt{font-size:11px; font-weight:700; color:var(--muted); font-variant-numeric:tabular-nums;}
+#fbAcctOdr{display:flex; flex-direction:column; gap:6px; margin-top:10px;}
+.odrPillRow{display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px;}
+.odrPillRow .acct{color:var(--muted); font-weight:600;}
+.odrPillRow.total{border-top:1px solid var(--border); padding-top:6px; font-weight:700;}
+.odrPillRow.total .acct{color:var(--ink);}
+.odrPill{display:inline-flex; align-items:center; gap:4px; font-weight:700; font-variant-numeric:tabular-nums;}
+.odrPill.imp{color:var(--critical);}
+.odrPill.notimp{color:var(--good);}
 
 .section{display:flex; flex-direction:column; gap:14px;}
 .section-head{
@@ -342,11 +345,6 @@ Log out
 </div>
 
 <div class="grid">
-<div class="card c-span-12">
-<h3>ODR Update <span class="cnt" id="cnt-odrupdate"></span></h3>
-<div class="hint">ODR impacted response from the tracker — 1–2★ only, 3★ is neutral and excluded — by account, then total</div>
-<div id="odrGrid"></div>
-</div>
 <div class="card c-span-4">
 <h3>Star rating <span class="cnt" id="cnt-rating"></span></h3>
 <div class="hint">Full 1–5★ scale — this log currently only captures 1–3★ reviews</div>
@@ -356,6 +354,8 @@ Log out
 <h3>By account (negative) <span class="cnt" id="cnt-fbacct"></span></h3>
 <div class="hint">Where negative feedback (1–3★) is concentrated</div>
 <div class="chartbox" style="height:200px"><canvas id="chartFbAcct"></canvas></div>
+<div class="hint" style="margin-top:10px">ODR impact from the tracker — by account, then total</div>
+<div id="fbAcctOdr"></div>
 </div>
 <div class="card c-span-4">
 <h3>By account (positive) <span class="cnt" id="cnt-fbacctpos"></span></h3>
@@ -841,43 +841,29 @@ wrap.innerHTML = `<table class="agentMatrix">
 </table>`;
 }
 
-// ODR Update: breaks down the tracker's "ODR Impacted" response for genuinely
-// negative feedback (1-2★; 3★ is neutral) — one mini bar chart per account (same
-// look as the "ODR impact" chart in A-Z Claims), account wise first, then Total last.
-function slugify(s){ return String(s).replace(/[^a-z0-9]+/gi,'-').toLowerCase(); }
-
-function renderOdrCharts(rows){
+// By account (negative): under the existing chart, break down the tracker's
+// "ODR Impacted" response (Impacted / Not impacted) per account, then a Total row.
+function renderFbAcctOdr(rows){
 const accounts = state.account === 'all' ? DATA.accounts : [state.account];
-const statuses = ['Impacted','Not impacted','Pending'];
-const odrColor = { 'Impacted':cv('--critical'), 'Not impacted':cv('--good'), 'Pending':cv('--warning') };
+const wrap = document.getElementById('fbAcctOdr');
+if (!wrap) return;
 const counts = {}; // counts[account][status]
 rows.forEach(f=>{
 (counts[f.account] = counts[f.account] || {})[f.odrImpacted] = (counts[f.account][f.odrImpacted]||0) + 1;
 });
-document.getElementById('cnt-odrupdate').textContent = rows.length ? `${rows.length} total` : '0 total';
-const wrap = document.getElementById('odrGrid');
 if (!rows.length){
 wrap.innerHTML = '<div style="color:var(--muted);font-size:12.5px;padding:6px 0;">No rows in this window.</div>';
 return;
 }
-const blocks = accounts.map(a=>({key:a, label:a, total:false})).concat([{key:'__total__', label:'Total', total:true}]);
-wrap.innerHTML = blocks.map(b=>{
-const id = slugify(b.key);
-return `<div class="odrMini${b.total?' total':''}">
-<div class="odrMiniTitle">${b.label} <span class="cnt" id="cnt-odr-${id}"></span></div>
-<div class="chartbox" style="height:160px"><canvas id="chartOdr-${id}"></canvas></div>
-</div>`;
+let totImp = 0, totNot = 0;
+const rowsHtml = accounts.map(a=>{
+const imp = (counts[a] && counts[a]['Impacted']) || 0;
+const not = (counts[a] && counts[a]['Not impacted']) || 0;
+totImp += imp; totNot += not;
+return `<div class="odrPillRow"><span class="acct">${a}</span><span><span class="odrPill imp">${imp} impacted</span> · <span class="odrPill notimp">${not} not impacted</span></span></div>`;
 }).join('');
-blocks.forEach(b=>{
-const id = slugify(b.key);
-const entries = statuses.map(st => {
-const v = b.total
-? accounts.reduce((s,a)=> s + ((counts[a]&&counts[a][st])||0), 0)
-: (counts[b.key] && counts[b.key][st]) || 0;
-return [st, v];
-});
-vbar(`chartOdr-${id}`, `odr-${id}`, entries, l=>odrColor[l], `cnt-odr-${id}`);
-});
+const totalHtml = `<div class="odrPillRow total"><span class="acct">Total</span><span><span class="odrPill imp">${totImp} impacted</span> · <span class="odrPill notimp">${totNot} not impacted</span></span></div>`;
+wrap.innerHTML = rowsHtml + totalHtml;
 }
 
 function render(){
@@ -925,8 +911,6 @@ document.getElementById('fbRemovedFlag').textContent = fbCounts['Removed'] || 0;
 document.getElementById('fbPendingFlag').textContent = fbCounts['Pending'] || 0;
 document.getElementById('fbPositiveFlag').textContent = posFeedback.length;
 
-renderOdrCharts(removalFeedback);
-
 const ratingCounts = {
 '1★': feedback.filter(f=>f.rating===1).length, '2★': feedback.filter(f=>f.rating===2).length,
 '3★': feedback.filter(f=>f.rating===3).length, '4★': feedback.filter(f=>f.rating===4).length,
@@ -939,6 +923,7 @@ vbar('chartRating','rating', ratingEntries, l=>ratingColor[l], 'cnt-rating');
 
 const acctCounts = countBy(negFeedback, 'account');
 vbar('chartFbAcct','fbacct', sortedEntries(acctCounts), ()=>cv('--fb-hue'), 'cnt-fbacct');
+renderFbAcctOdr(negFeedback);
 
 // Feedback actually removed — its own dedicated chart, separate from "By account (negative)".
 const removedByAcct = countBy(removalFeedback.filter(f=>f.status==='Removed'), 'account');
