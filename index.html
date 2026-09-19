@@ -352,13 +352,18 @@ Log out
 </div>
 <div class="card c-span-4">
 <h3>By account (negative) <span class="cnt" id="cnt-fbacct"></span></h3>
-<div class="hint">Where negative feedback (1–3★) is concentrated</div>
+<div class="hint">Where negative feedback (1–2★) is concentrated</div>
 <div class="chartbox" style="height:200px"><canvas id="chartFbAcct"></canvas></div>
 </div>
 <div class="card c-span-4">
 <h3>By account (positive) <span class="cnt" id="cnt-fbacctpos"></span></h3>
 <div class="hint">Where positive feedback (4–5★) is concentrated</div>
 <div class="chartbox" style="height:200px"><canvas id="chartFbAcctPos"></canvas></div>
+</div>
+<div class="card c-span-4">
+<h3>By account (neutral) <span class="cnt" id="cnt-fbacctneu"></span></h3>
+<div class="hint">Where neutral feedback (3★) is concentrated</div>
+<div class="chartbox" style="height:200px"><canvas id="chartFbAcctNeu"></canvas></div>
 </div>
 <div class="card c-span-4">
 <h3>Removed by account <span class="cnt" id="cnt-fbremoved"></span></h3>
@@ -901,9 +906,9 @@ hbar('chartRefund','refund', sortedEntries(refundCounts), l=>refundColor[l]||cv(
 const issueCounts = countBy(claims, 'issue');
 hbar('chartIssue','issue', sortedEntries(issueCounts), cv('--claims-hue'), 'cnt-issue');
 
-// Split the combined feedback log into negative (1-3★) and positive (4-5★).
-// Rows with no parseable rating are treated as negative (matches this log's original purpose).
-const negFeedback = feedback.filter(f => !(f.rating >= 4));
+// Split the combined feedback log into negative (1-2★), neutral (3★) and positive (4-5★).
+const negFeedback = feedback.filter(f => f.rating === 1 || f.rating === 2);
+const neuFeedback = feedback.filter(f => f.rating === 3);
 const posFeedback = feedback.filter(f => f.rating >= 4);
 
 document.getElementById('fbTotal').textContent = feedback.length;
@@ -936,6 +941,9 @@ vbar('chartFbRemoved','fbremoved', sortedEntries(removedByAcct), ()=>cv('--good'
 
 const posAcctCounts = countBy(posFeedback, 'account');
 vbar('chartFbAcctPos','fbacctpos', sortedEntries(posAcctCounts), ()=>cv('--good'), 'cnt-fbacctpos');
+
+const neuAcctCounts = countBy(neuFeedback, 'account');
+vbar('chartFbAcctNeu','fbacctneu', sortedEntries(neuAcctCounts), ()=>cv('--warning'), 'cnt-fbacctneu');
 
 const reasonCounts = countBy(negFeedback, 'reason');
 hbar('chartReason','reason', sortedEntries(reasonCounts), cv('--fb-hue'), 'cnt-reason');
