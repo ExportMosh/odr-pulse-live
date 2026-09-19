@@ -177,6 +177,14 @@ width:32px; height:32px; border-radius:8px; cursor:pointer; display:none; align-
 .agentMatrix tbody tr.agentTotalsRow td{border-top:2px solid var(--border); border-bottom:none;}
 .agentMatrix tbody tr.agentTotalsRow td.aname{font-weight:800;}
 
+.removedByAcct{margin-top:12px; padding-top:10px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:6px;}
+.removedByAcct .rbaHead{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted);}
+.removedByAcct .rbaRow{display:flex; justify-content:space-between; align-items:center; font-size:12.5px;}
+.removedByAcct .rbaRow .rbaName{color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.removedByAcct .rbaRow .rbaVal{font-variant-numeric:tabular-nums; font-weight:700; color:var(--good-text); flex:0 0 auto; padding-left:10px;}
+.removedByAcct .rbaRow.total{font-weight:800; border-top:1px solid var(--border); padding-top:6px; margin-top:2px;}
+.removedByAcct .rbaRow.total .rbaName{color:var(--ink);}
+
 .section{display:flex; flex-direction:column; gap:14px;}
 .section-head{
 display:flex; align-items:center; gap:14px; flex-wrap:wrap;
@@ -336,10 +344,10 @@ Log out
 </div>
 
 <div class="grid">
-<div class="card c-span-4">
-<h3>Removal status <span class="cnt" id="cnt-fbstatus"></span></h3>
-<div class="hint">Removed, still live, or awaiting review — 1–2★ only, 3★ is neutral and excluded</div>
-<div class="chartbox" style="height:200px"><canvas id="chartFbStatus"></canvas></div>
+<div class="card c-span-12">
+<h3>ODR Update <span class="cnt" id="cnt-odrupdate"></span></h3>
+<div class="hint">ODR impacted response from the tracker — 1–2★ only, 3★ is neutral and excluded — by account, then total</div>
+<div class="agentTable" id="odrTable"></div>
 </div>
 <div class="card c-span-4">
 <h3>Star rating <span class="cnt" id="cnt-rating"></span></h3>
@@ -350,6 +358,7 @@ Log out
 <h3>By account (negative) <span class="cnt" id="cnt-fbacct"></span></h3>
 <div class="hint">Where negative feedback (1–3★) is concentrated</div>
 <div class="chartbox" style="height:200px"><canvas id="chartFbAcct"></canvas></div>
+<div class="removedByAcct" id="fbAcctRemoved"></div>
 </div>
 <div class="card c-span-4">
 <h3>By account (positive) <span class="cnt" id="cnt-fbacctpos"></span></h3>
@@ -475,6 +484,8 @@ rows.forEach(r=>{
 const fd = parseDate(r['Date']);
 if (!fd) return;
 const ratingRaw = clean(r['Rating']);
+const odrRaw = clean(r['ODR Impacted']).toLowerCase();
+const odr = odrRaw === 'yes' ? 'Impacted' : odrRaw === 'no' ? 'Not impacted' : 'Pending';
 out.push({
 date: fd,
 account: clean(r['Account']),
@@ -483,6 +494,7 @@ orderId: clean(r['Order ID']),
 comments: clean(r['Comments']),
 reason: clean(r['Reason']) || 'Not specified',
 status: clean(r['Status']) || 'Pending',
+odrImpacted: odr,
 remarks: clean(r['Remarks']),
 agent: clean(r['Agent Name']),
 });
@@ -827,6 +839,47 @@ wrap.innerHTML = `<table class="agentMatrix">
 </table>`;
 }
 
+// ODR Update: breaks down the tracker's "ODR Impacted" response for genuinely
+// negative feedback (1-2★; 3★ is neutral) — account wise first, then a total row.
+function renderOdrTable(rows){
+const accounts = state.account === 'all' ? DATA.accounts : [state.account];
+const statuses = ['Impacted','Not impacted','Pending'];
+const counts = {}; // counts[account][status]
+rows.forEach(f=>{
+(counts[f.account] = counts[f.account] || {})[f.odrImpacted] = (counts[f.account][f.odrImpacted]||0) + 1;
+});
+const cellVal = (acct, st) => (counts[acct] && counts[acct][st]) || 0;
+const rowTotal = acct => statuses.reduce((s,st)=> s + cellVal(acct, st), 0);
+const colTotal = st => accounts.reduce((s,a)=> s + cellVal(a, st), 0);
+const grandTotal = statuses.reduce((s,st)=> s + colTotal(st), 0);
+const wrap = document.getElementById('odrTable');
+document.getElementById('cnt-odrupdate').textContent = rows.length ? `${rows.length} total` : '0 total';
+if (!rows.length){
+wrap.innerHTML = '<div style="color:var(--muted);font-size:12.5px;padding:6px 0;">No rows in this window.</div>';
+return;
+}
+const bodyRows = accounts.map(a=>
+`<tr><td class="aname">${a}</td>${statuses.map(st=>`<td class="anum">${cellVal(a,st)}</td>`).join('')}<td class="anum atot">${rowTotal(a)}</td></tr>`
+).join('');
+const totalRow = `<tr class="agentTotalsRow"><td class="aname">Total</td>${statuses.map(st=>`<td class="anum">${colTotal(st)}</td>`).join('')}<td class="anum atot">${grandTotal}</td></tr>`;
+wrap.innerHTML = `<table class="agentMatrix">
+<thead><tr><th class="aname-h">Account</th><th>Impacted</th><th>Not impacted</th><th>Pending</th><th class="atot-h">Total</th></tr></thead>
+<tbody>${bodyRows}${totalRow}</tbody>
+</table>`;
+}
+
+// Removed count, broken down by account — lives alongside the negative-feedback-by-account
+// chart now (moved out of the old "Removal status" card). Scope matches ODR Update: 1-2★ only.
+function renderRemovedByAccount(rows){
+const accounts = state.account === 'all' ? DATA.accounts : [state.account];
+const removedByAcct = countBy(rows.filter(f=>f.status==='Removed'), 'account');
+const totalRemoved = accounts.reduce((s,a)=> s + (removedByAcct[a]||0), 0);
+const wrap = document.getElementById('fbAcctRemoved');
+wrap.innerHTML = `<div class="rbaHead">Removed (1–2★ only)</div>` +
+accounts.map(a=>`<div class="rbaRow"><span class="rbaName">${a}</span><span class="rbaVal">${removedByAcct[a]||0}</span></div>`).join('') +
+`<div class="rbaRow total"><span class="rbaName">Total</span><span class="rbaVal">${totalRemoved}</span></div>`;
+}
+
 function render(){
 try {
 const claims = filteredClaims();
@@ -872,8 +925,7 @@ document.getElementById('fbRemovedFlag').textContent = fbCounts['Removed'] || 0;
 document.getElementById('fbPendingFlag').textContent = fbCounts['Pending'] || 0;
 document.getElementById('fbPositiveFlag').textContent = posFeedback.length;
 
-const fbColor = { 'Not Removed':cv('--critical'), 'Removed':cv('--good'), 'Pending':cv('--warning') };
-vbar('chartFbStatus','fbstatus', sortedEntries(fbCounts), l=>fbColor[l]||cv('--fb-hue'), 'cnt-fbstatus');
+renderOdrTable(removalFeedback);
 
 const ratingCounts = {
 '1★': feedback.filter(f=>f.rating===1).length, '2★': feedback.filter(f=>f.rating===2).length,
@@ -887,6 +939,7 @@ vbar('chartRating','rating', ratingEntries, l=>ratingColor[l], 'cnt-rating');
 
 const acctCounts = countBy(negFeedback, 'account');
 vbar('chartFbAcct','fbacct', sortedEntries(acctCounts), ()=>cv('--fb-hue'), 'cnt-fbacct');
+renderRemovedByAccount(removalFeedback);
 
 const posAcctCounts = countBy(posFeedback, 'account');
 vbar('chartFbAcctPos','fbacctpos', sortedEntries(posAcctCounts), ()=>cv('--good'), 'cnt-fbacctpos');
