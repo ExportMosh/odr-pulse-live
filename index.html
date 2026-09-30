@@ -117,6 +117,11 @@ padding:6px 12px; border-radius:8px; cursor:pointer; display:inline-flex; align-
 }
 .logoutBtn:hover{background:var(--surface-2); color:var(--critical);}
 
+.projnav{display:inline-flex; align-items:center; gap:2px; padding:3px; border-radius:10px; background:var(--surface-2); border:1px solid var(--border); margin-bottom:8px;}
+.projnav a{font-size:12px; font-weight:700; padding:6px 12px; border-radius:8px; text-decoration:none; color:var(--muted);}
+.projnav a:hover{color:var(--ink);}
+.projnav a.active{background:var(--surface); color:var(--ink); box-shadow:var(--shadow);}
+
 .errorbar{
 display:none; align-items:flex-start; gap:10px; background:color-mix(in srgb, var(--critical) 12%, var(--surface));
 border:1px solid color-mix(in srgb, var(--critical) 35%, var(--border)); border-radius:12px; padding:12px 16px; font-size:13px; color:var(--ink-2);
@@ -235,6 +240,10 @@ footer a{color:var(--accent);}
 
 <div class="topbar">
 <div class="brand">
+<nav class="projnav">
+<a href="/" class="active">ODR Pulse</a>
+<a href="/ops.html">Ops Dashboard</a>
+</nav>
 <div class="eyebrow">Seller Operations</div>
 <h1>ODR Pulse — Live</h1>
 <p>Where your claims and negative feedback are concentrated — by outcome, reason and account — pulled straight from your Google Sheet on every load.</p>

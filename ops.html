@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Operations Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root{
+    --bg:#F5F3EC; --panel:#FFFFFF; --ink:#1B2430; --muted:#6B6558; --line:#DDD8C8; --field:#FBFAF6;
+    --accent:#B8842B; --good:#1F5C55; --good2:#5FA396; --bad:#A6362B; --bad2:#6E2119; --warn:#C27A1A;
+    --good-bg:#E4EEEC; --bad-bg:#F5E6E3; --warn-bg:#F6EAD2; --side:#1B2430; --side-ink:#EDEAE0; --side-muted:#A7A190;
+    box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161C; --panel:#1B212A; --ink:#EDEAE0; --muted:#A7A190; --line:#333B47; --field:#161B22;
+      --accent:#D9A649; --good:#5BB5A6; --good2:#3F8074; --bad:#E0776B; --bad2:#B0463B; --warn:#E0A94A;
+      --good-bg:#1B322E; --bad-bg:#3A211E; --warn-bg:#3A2F17; --side:#0E1217; --side-ink:#EDEAE0; --side-muted:#8C8676;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161C; --panel:#1B212A; --ink:#EDEAE0; --muted:#A7A190; --line:#333B47; --field:#161B22;
+    --accent:#D9A649; --good:#5BB5A6; --good2:#3F8074; --bad:#E0776B; --bad2:#B0463B; --warn:#E0A94A;
+    --good-bg:#1B322E; --bad-bg:#3A211E; --warn-bg:#3A2F17; --side:#0E1217; --side-ink:#EDEAE0; --side-muted:#8C8676;
+  }
+  html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 76px);}
+  *{box-sizing:border-box;}
+  [hidden]{display:none !important;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',system-ui,sans-serif; font-size:14.5px; line-height:1.5;}
+  h1,h2,h3,.num{font-family:'Space Grotesk',sans-serif;}
+  h2{font-size:1.35rem; margin:0 0 4px;}
+  h3{font-size:1.02rem; margin:28px 0 4px;}
+  a{color:inherit;}
+
+  #shell{display:flex; min-height:100vh;}
+  #sidebar{width:232px; flex-shrink:0; background:var(--side); color:var(--side-ink); position:sticky; top:0; height:100vh; overflow-y:auto; padding:26px 18px;}
+  #sidebar .brand{font-family:'Space Grotesk'; font-weight:700; font-size:1.15rem;}
+  #sidebar .brand-sub{color:var(--side-muted); font-size:.8rem; margin:2px 0 26px;}
+  #sidebar nav a{display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:6px; color:#CFCABB; text-decoration:none; font-size:.92rem; margin-bottom:2px;}
+  #sidebar nav a:hover{background:rgba(255,255,255,.07); color:#fff;}
+  #sidebar nav a .dot{width:6px; height:6px; border-radius:50%; background:#665F4D; flex-shrink:0;}
+  #sidebar .footnote{margin-top:26px; font-size:.72rem; color:var(--side-muted); border-top:1px solid #33394A; padding-top:14px;}
+  .projnav{display:flex; gap:2px; padding:3px; border-radius:8px; background:rgba(255,255,255,.06); margin-bottom:18px;}
+  .projnav a{flex:1; text-align:center; font-size:.76rem; font-weight:700; padding:6px 8px; border-radius:6px; text-decoration:none; color:var(--side-muted);}
+  .projnav a:hover{color:#fff; background:rgba(255,255,255,.07);}
+  .projnav a.active{background:rgba(255,255,255,.14); color:#fff;}
+  main{flex:1; min-width:0; padding:30px 38px 90px;}
+  @media (max-width:900px){
+    #shell{display:block;}
+    #sidebar{position:static; width:auto; height:auto; padding:14px 16px;}
+    #sidebar .brand-sub,#sidebar .footnote{display:none;}
+    #sidebar nav{display:flex; gap:4px; overflow-x:auto; padding-bottom:4px;}
+    #sidebar nav a{white-space:nowrap;}
+    main{padding:20px 16px 80px;}
+  }
+  .top h1{font-size:1.7rem; margin:0 0 4px;}
+  .top p{color:var(--muted); margin:0 0 22px; max-width:640px; font-size:.92rem;}
+  section{margin-bottom:54px;}
+  .desc{color:var(--muted); font-size:.88rem; margin:0 0 16px; max-width:720px;}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 22px;}
+  .note{color:var(--muted); font-size:.8rem;}
+
+  /* load */
+  .drop{display:block; border:2px dashed var(--line); border-radius:12px; padding:34px 20px; text-align:center; cursor:pointer; background:var(--field);}
+  .drop:hover,.drop.over{border-color:var(--accent);}
+  .drop strong{font-family:'Space Grotesk'; font-size:1.05rem;}
+  .drop{position:relative;} .drop input{position:absolute; opacity:0; width:1px; height:1px;} .drop:focus-within{border-color:var(--accent);}
+  #status{margin-top:12px; font-size:.88rem; color:var(--muted);} #status.err{color:var(--bad);} #status.ok{color:var(--good);}
+
+  /* filters */
+  #filterBar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; margin-bottom:26px; padding:14px 18px; box-shadow:0 6px 18px rgba(0,0,0,.06);}
+  .field label{display:block; font-size:.74rem; font-weight:600; margin-bottom:4px; color:var(--muted);}
+  select,input[type=date],textarea{font-family:'Inter',sans-serif; font-size:.85rem; padding:7px 9px; border:1px solid var(--line); border-radius:7px; background:var(--field); color:var(--ink); min-width:130px;}
+  textarea{width:100%; min-height:74px; resize:vertical;}
+  button.btn{font-family:'Inter'; font-size:.84rem; font-weight:600; padding:8px 14px; border-radius:7px; border:1px solid var(--line); background:transparent; color:var(--ink); cursor:pointer;}
+  button.btn:hover{border-color:var(--ink);}
+  button.btn.primary{background:var(--ink); color:var(--panel); border-color:var(--ink);}
+
+  /* kpis */
+  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin-bottom:18px;}
+  .kpi{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; text-align:left; font:inherit; color:inherit; display:block; width:100%;}
+  button.kpi{cursor:pointer;} button.kpi:hover{border-color:var(--accent);}
+  .kpi .num{font-size:1.75rem; font-weight:700; line-height:1.05;}
+  .kpi .pctsmall{font-size:1rem; font-weight:600; opacity:.65;}
+  .kpi .lbl{font-size:.8rem; color:var(--muted); margin-top:6px; line-height:1.3;}
+  .kpi .sub{font-size:.74rem; color:var(--muted); margin-top:3px;}
+  .kpi .hint{font-size:.72rem; color:var(--accent); margin-top:6px; font-weight:600;}
+  .kpi.good .num{color:var(--good);} .kpi.bad .num{color:var(--bad);} .kpi.warn .num{color:var(--warn);}
+
+  .chart-box{position:relative; width:100%;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px;} @media (max-width:1100px){.grid2{grid-template-columns:1fr;}}
+
+  .tw{overflow:auto; max-height:430px; border:1px solid var(--line); border-radius:10px; background:var(--panel);}
+  table{width:100%; border-collapse:collapse; font-size:.83rem;}
+  th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top;}
+  th{position:sticky; top:0; background:var(--field); color:var(--muted); font-weight:600; font-size:.74rem; white-space:nowrap; z-index:1;}
+  td.n,th.n{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  tbody tr:hover{background:var(--field);}
+  tr.hl td{background:var(--warn-bg);}
+  .tag{display:inline-block; padding:1px 8px; border-radius:20px; font-size:.72rem; font-weight:600;}
+  .tag.good{background:var(--good-bg); color:var(--good);} .tag.bad{background:var(--bad-bg); color:var(--bad);} .tag.warn{background:var(--warn-bg); color:var(--warn);}
+  .cols{display:flex; flex-wrap:wrap; gap:6px 16px; margin:10px 0 14px;}
+  .cols label{font-size:.8rem; display:flex; gap:5px; align-items:center;}
+  .qbar{display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; margin-bottom:8px;}
+  details.def{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 20px; margin-top:14px;}
+  details.def summary{cursor:pointer; font-weight:600;} details.def ul{margin:10px 0 4px 18px; padding:0;} details.def li{margin-bottom:6px;}
+  .empty{color:var(--muted); padding:26px; text-align:center;}
+
+  .subhead{display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin:26px 0 8px;}
+  .subhead h3{margin:0;}
+  .sc-grid{max-height:540px; overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; padding:4px 6px 4px 2px; border:1px solid var(--line); border-radius:10px; background:var(--field); padding:12px;}
+  .sc{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px;}
+  .sc .hd{display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:8px;}
+  .sc .hd b{font-size:.86rem; line-height:1.3;} .sc .hd span{font-size:.76rem; color:var(--muted); white-space:nowrap;}
+  .sc .bar{display:flex; height:26px; border-radius:6px; overflow:hidden; background:var(--line);}
+  .sc .seg{display:flex; align-items:center; justify-content:center; color:#fff; font-size:.72rem; font-weight:700; min-width:0; overflow:hidden;}
+  .sc .chips{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:8px; font-size:.75rem; color:var(--muted);}
+  .sc .chips i{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px;}
+  .sc .chips b{color:var(--ink);} 
+  .sc .foot{margin-top:8px; font-size:.76rem; color:var(--muted); border-top:1px solid var(--line); padding-top:7px;}
+  .sc .tagline{margin-bottom:6px;}
+  .kpi.sm .num{font-size:1.5rem;} .kpi.sm .lbl{color:var(--ink); font-size:.84rem; margin-top:5px;}
+  .kpi .sub2{font-size:.76rem; margin-top:5px; color:var(--muted); line-height:1.45;} .kpi .sub2 .g{color:var(--good); font-weight:600;} .kpi .sub2 .r{color:var(--bad); font-weight:600;} .kpi .sub2 b{color:var(--ink);}
+  .rl-wrap{max-height:520px; overflow:auto; border:1px solid var(--line); border-radius:10px; background:var(--panel);}
+  table.rl{width:100%; border-collapse:collapse; font-size:.83rem;}
+  table.rl th{position:sticky; top:0; z-index:1; background:var(--field); color:var(--muted); font-weight:600; font-size:.73rem; padding:9px 12px; white-space:nowrap; text-align:right; border-bottom:1px solid var(--line);}
+  table.rl th:first-child,table.rl td:first-child{text-align:left;}
+  table.rl td{padding:7px 12px; border-bottom:1px solid var(--line); white-space:nowrap; text-align:right; font-variant-numeric:tabular-nums;}
+  table.rl td.st{min-width:290px; font-weight:600; color:var(--ink);}
+  table.rl tbody tr:hover{background:var(--field);}
+  table.rl .w{color:var(--warn); font-weight:600;} table.rl .g{color:var(--good); font-weight:600;} table.rl .r{color:var(--bad); font-weight:600;} table.rl .m{color:var(--muted);}
+  .mini{display:inline-block; vertical-align:middle; width:70px; height:8px; background:var(--line); border-radius:4px; margin-right:8px; overflow:hidden;}
+  .mini i{display:block; height:100%; background:var(--accent);}
+  .grp-t{font-weight:600; font-size:.92rem; margin:18px 0 8px; display:flex; gap:10px; align-items:center;}
+  .grp-t:first-child{margin-top:4px;}
+  .hr{border:0; border-top:1px solid var(--line); margin:26px 0 4px;}
+  .cardtitle{margin:0 0 4px;}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+</style>
+</head>
+<body>
+<div id="shell">
+  <aside id="sidebar">
+    <div class="projnav">
+      <a href="/">ODR Pulse</a>
+      <a href="/ops.html" class="active">Ops Dashboard</a>
+    </div>
+    <div class="brand">Ops Pain Points</div>
+    <div class="brand-sub">Zoho order report analytics</div>
+    <nav>
+      <a href="#load"><span class="dot"></span>Load report</a>
+      <a href="#purchase"><span class="dot"></span>Purchase delays</a>
+      <a href="#refunds"><span class="dot"></span>Refunds</a>
+      <a href="#notreturned"><span class="dot"></span>Refunded, not returned</a>
+      <a href="#pending"><span class="dot"></span>Pending refunds</a>
+      <a href="#dg"><span class="dot"></span>DG products</a>
+      <a href="#shipments"><span class="dot"></span>Shipments</a>
+      <a href="#pd"><span class="dot"></span>Pending to deliver</a>
+      <a href="#download"><span class="dot"></span>Download full report</a>
+    </nav>
+    <div class="footnote">Everything runs in your browser. The report is read locally and is never uploaded anywhere.</div>
+  </aside>
+
+  <main>
+    <div class="top">
+      <h1>Operations Dashboard</h1>
+      <p>Upload the Zoho export to see where orders are stuck. Sections are added one at a time.</p>
+    </div>
+
+    <section id="load" style="margin-bottom:30px;">
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept=".xlsx,.xls,.csv">
+        <strong>Choose the Zoho report</strong> (.xlsx or .csv) or drop it here
+        <div class="note" style="margin-top:6px;">A 30 MB xlsx can take 20–40 seconds to read. Nothing leaves your device.</div>
+      </label>
+      <div id="status"></div>
+    </section>
+
+    <div id="app" hidden>
+      <div class="panel" id="filterBar">
+        <div class="field"><label for="fSource">Lead source</label><select id="fSource"></select></div>
+        <div class="field"><label for="fMonth">Order month</label><select id="fMonth"></select></div>
+        <div class="field"><label for="fFrom">EDD from</label><input type="date" id="fFrom"></div>
+        <div class="field"><label for="fTo">EDD to</label><input type="date" id="fTo"></div>
+        <div class="field"><label for="fAsOf">Report as-of date</label><input type="date" id="fAsOf"></div>
+        <button class="btn" id="fReset" type="button">Reset</button>
+        <div class="note" id="fSummary" style="flex-basis:100%;"></div>
+      </div>
+
+      <section id="purchase">
+        <div class="panel">
+          <h2>Purchase delays</h2>
+          <p class="desc">Days between the order landing in Zoho (Order Creation Date) and the Purchase Date. Green = purchased the same or next day, amber = 2–3 days, red = 4 days or more. Percentages are shares of all purchased order lines.</p>
+          <div class="kpis" id="kpiPurchase"></div>
+          <div class="chart-box" style="height:380px"><canvas id="cPurchase"></canvas></div>
+          <div class="note" id="purchaseNote" style="margin-top:12px;"></div>
+          <div class="subhead"><h3>Never purchased — cancelled / refunded, by Zoho lead status</h3></div>
+          <div class="rl-wrap" id="neverPurchasedRows"></div>
+
+        </div>
+      </section>
+
+      <section id="refunds">
+        <div class="panel">
+          <h2 class="cardtitle">Refunds</h2>
+          <p class="desc">Taken from the Zoho <code>Refund</code> column (Full Refund / Partial Refund) against all order lines. “Seller refund received” means the line has a US Seller Refund Date <b>or</b> a Refunded-by-US-Seller amount greater than 0 — either one is enough, even if the other of the two is blank or zero, so a line isn't missed just because one field wasn't filled in.</p>
+          <div class="kpis" id="kpiRefund"></div>
+          <div class="note" id="refundNote" style="margin-top:12px;"></div>
+          <div class="subhead"><h3>Refunded lines by Zoho lead status</h3>
+            <div class="field"><label for="refundSort">Sort cards by</label><select id="refundSort"><option value="n">Most refunded lines</option><option value="metric">Lowest seller-refund %</option></select></div></div>
+          <div class="rl-wrap" id="refundCards"></div>
+        </div>
+      </section>
+
+      <section id="notreturned">
+        <div class="panel">
+          <h2 class="cardtitle">Refunded, but product not received back</h2>
+          <p class="desc">Refunded lines (Full / Partial) whose Zoho lead status says <b>delivered</b>, <b>RMA authorised</b> or <b>Amazon Refunded - Product Not Received</b>. For these the <code>Reverse Pickup Token ID</code> column is checked: if there is no reverse pickup update (and no RTO/RMA received date) the customer has been refunded but the product has not come back.</p>
+          <div class="kpis" id="kpiNrb"></div>
+          <div class="note" id="nrbNote"></div>
+          <div class="subhead"><h3>By Zoho lead status</h3></div>
+          <div class="rl-wrap" id="nrbRows"></div>
+        </div>
+      </section>
+
+
+      <section id="pending">
+        <div class="panel">
+          <h2 class="cardtitle">Pending refunds</h2>
+          <p class="desc">A line is a <b>pending refund</b> when the customer's refund is owed but not recorded: its Zoho lead status is on your list (customer cancellation, order failed / cancelled, returned to inventory, refunded-by-seller and similar) <b>or</b> it is another cancelled, failed or returned status (RMA / RTO, FBA, lost, damaged, wrong or not-received item), <b>and</b> the Refund column is still empty. These lines are left out of Total shipments.</p>
+          <div class="kpis" id="kpiPending"></div>
+          <div class="note" id="pendingNote" style="margin-top:12px;"></div>
+
+          <div class="subhead"><h3>Pending refunds by Zoho lead status</h3></div>
+          <div class="rl-wrap" id="pendingRows"></div>
+        </div>
+      </section>
+
+      <section id="dg">
+        <div class="panel">
+          <h2 class="cardtitle">DG products — EDD brief</h2>
+          <p class="desc">Order lines whose Zoho lead status is a DG (dangerous goods) hold, e.g. <b>Item Held at Delhi - DG Product</b>, and that are not delivered or refunded. Each is compared with the report as-of date: <b>EDD breached</b> = EDD is before the as-of date; otherwise it shows how many days are left before the EDD breaches.</p>
+          <div class="kpis" id="kpiDg"></div>
+          <div class="note" id="dgNote"></div>
+          <div class="subhead"><h3>EDD date wise</h3></div>
+          <div class="rl-wrap" id="dgRows"></div>
+        </div>
+      </section>
+
+      <section id="shipments">
+        <div class="panel">
+          <h2 class="cardtitle">Shipments — delivered and pending</h2>
+          <p class="desc">Shipments = order lines that are not refunded and have no pending refund (nothing owed back to the customer). <b>Delivered on time</b> = delivered on or before the EDD, <b>delivered with delay</b> = delivered after the EDD. On-time and delay percentages are shares of delivered shipments; delivered and pending are shares of all shipments.</p>
+          <div class="kpis" id="kpiShip"></div>
+          <div id="shipFlag" style="max-width:420px;margin-top:12px;"></div>
+        </div>
+      </section>
+
+      <section id="pd">
+        <div class="panel">
+          <h2 class="cardtitle">Pending to deliver — shipped and not shipped</h2>
+          <p class="desc">The Pending to deliver shipments from the Shipments section, split using the <b>Zoho shipping dates</b> (not the lead status). <b>Shipped</b> = the line has a US Shipping Date (shipped from India) or any later shipping date. <b>Not shipped</b> = none of those dates exists yet. Each group is then broken down by how far its shipping dates have got, and by EDD against the report as-of date: <b>breached</b> = EDD is before the as-of date, otherwise the days left before it breaches.</p>
+          <div class="kpis" id="kpiPd"></div>
+
+          <div class="subhead"><h3>Shipped — EDD brief</h3></div>
+          <div class="kpis" id="pdShippedCards"></div>
+          <div class="subhead" style="margin-top:8px;"><h3>Shipped — by Zoho shipping information</h3></div>
+          <div class="rl-wrap" id="pdShipped"></div>
+          <div class="subhead" style="margin-top:14px;"><h3>Shipped — EDD date wise</h3></div>
+          <div class="rl-wrap" id="pdShippedEdd"></div>
+
+          <div class="subhead"><h3>Not shipped — EDD brief</h3></div>
+          <div class="kpis" id="pdNotShippedCards"></div>
+          <div class="subhead" style="margin-top:8px;"><h3>Not shipped — by Zoho shipping information</h3></div>
+          <div class="rl-wrap" id="pdNotShipped"></div>
+          <div class="subhead" style="margin-top:14px;"><h3>Not shipped — EDD date wise</h3></div>
+          <div class="rl-wrap" id="pdNotShippedEdd"></div>
+          <div class="note" id="pdNote" style="margin-top:10px;"></div>
+        </div>
+      </section>
+
+      <section id="download">
+        <div class="panel">
+          <h2 class="cardtitle">Download full report</h2>
+          <p class="desc">Every row exactly as you uploaded it — all original columns, in the original order — with two columns added at the end. <b>Remarks 1</b> gives every single row the dashboard header it belongs to: Never purchased — cancelled / refunded, Refunded, Refunded product not received back, Pending refunds, DG products — EDD brief, Pending to deliver, Delivered, or Duplicate lead. <b>Remarks 2</b> gives the sub-grouping shown under that header: Shipped / Not shipped (Pending to deliver), the EDD position (DG products), Delivered on time / with delay, No reverse pickup update, or the Zoho lead status for the refund and never-purchased headers. A line gets exactly one header, checked in that order. This always covers the whole uploaded file, not just what the filters above are currently showing.</p>
+          <div class="kpis" id="kpiDownload"></div>
+          <button class="btn primary" id="downloadReportBtn" type="button">Download CSV with Remarks</button>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ================= CORE (pure logic, no DOM) ================= */
+const MS_DAY = 86400000;
+let SERIAL_EPOCH = 25569;   /* Excel serial of 1970-01-01 (1900 date system). 24107 for 1904-system workbooks. */
+const MIN_VALID_DAY = Math.floor(Date.UTC(2020,0,1)/MS_DAY);
+const MAX_VALID_DAY = MIN_VALID_DAY + 365*20;
+
+/* Zoho column names we read (matched case/space-insensitively) */
+const COLS = {
+  id:'Record Id', created:'Order Creation Date', lineNo:'Order_Number', orderId:'Alternate Order No.',
+  followUp:'Follow-up_Status', channel:'Fulfilment Channel', source:'Lead Source', status:'Lead Status',
+  firstName:'First Name', lastName:'Last Name', address:'Address', city:'City', state:'State', mobile:'Mobile', email:'Email',
+  title:'Title', sku:'SKU', category:'Product Category', qty:'Quantity', edd:'EDD',
+  purchased:'Purchase Date', usShip:'US Shipping Date', arrived:'Delivered at US', intlShip:'International Shipping Date',
+  bag:'Bag Received Date', localShip:'Local Shipping Date', delivered:'Delivered to Customer',
+  rtoDate:'RTO/RMA Rcvd Date', refund:'Refund', refundDate:'Refund Date', refundAmt:'Refund Amount',
+  courier:'Local Courier Name', tracking:'Local Tracking Number', intlId:'International Shipment ID', mawb:'Airline MAWB Number',
+  sellerRefundDate:'US Seller Refund Date', sellerRefundAmt:'Refunded by US Seller $', sellerSource:'US Refund Source',
+  reversePickup:'Reverse Pickup Token ID'
+};
+const REQUIRED = ['orderId','status','source','created','edd','delivered'];
+
+/* Pipeline stages (index = furthest milestone reached). Milestone dates: created, purchased, shipped from India,
+   arrived UAE, customs cleared/handed to last mile, received by last-mile partner, dispatched to customer */
+const STAGES = [
+  'Awaiting purchase',
+  'Purchased — not shipped from India',
+  'In transit India → UAE',
+  'Arrived UAE — customs / clearance',
+  'Cleared — going to last-mile partner',
+  'At last-mile partner — not dispatched',
+  'Dispatched to customer — not delivered'
+];
+const LEGS = [
+  {k:'op',  label:'Order → purchase',                            a:0, b:1},
+  {k:'pi',  label:'Purchase → shipped from India',               a:1, b:2},
+  {k:'iu',  label:'India → arrived UAE (transit)',               a:2, b:3},
+  {k:'uh',  label:'Arrived UAE → customs cleared / handed over', a:3, b:4},
+  {k:'hb',  label:'Handover → received by last-mile partner',    a:4, b:5},
+  {k:'bd',  label:'Last-mile partner → dispatched to customer',  a:5, b:6},
+  {k:'dd',  label:'Dispatched → delivered (last mile)',          a:6, b:7}
+];
+
+const RE_DELIVERED  = /^item delivered/i;
+const RE_TERMINATED = /cancel|refund|order failed|\brma\b|\brto\b|wrong product|damaged|not received|lost|\bfba\b|not saleable|product added to inventory|inventory added - (rma|rto|not)|delivery expected after edd/i;
+const RE_DISPATCHED_STATUS = /dispatched from uae hub/i;
+const RE_DG = /\bDG\b/i;   /* dangerous-goods products, e.g. 'Item Held at Delhi - DG Product' */
+const RE_DELIVERED_ANY = /delivered/i, RE_LOST = /lost|warehouse/i;
+const RE_RMA_AUTH = /\brma\b.*authori[sz]ed|rma auth/i;
+const RE_AMZ_PNR = /amazon refunded - product not received/i;
+
+
+/* Statuses that mean "customer must be refunded". If the Refund column is still empty the line is a PENDING REFUND.
+   hold = also stop the parcel from being delivered. Matching ignores case and spacing around hyphens. */
+const normStatus = s => String(s==null?'':s).toLowerCase().replace(/\s+/g,' ').replace(/\s*-\s*/g,' - ').trim();
+const PENDING_REFUND_RULES = (()=>{
+  const hold=['Customer Cancellation Request - In Transit','Customer Cancellation Request - Shipped to UAE'];
+  const pend=['Damaged Received from Seller','Inventory Added - Not Saleable','Inventory Added - RMA','Inventory Added - RTO','Inventory Added - Shipped to UAE',
+   'Order - Sent to FBA','Order Cancelled - After Purchase','Order Cancelled - Before Purchase','Order Cancelled - In Transit','Order Cancelled - Shipped to UAE',
+   'Order Cancelled by Seller','Order Confirmed Purchase Pending','Order Failed - Ban / Restricted Products','Order Failed - Delivery Expected after EDD',
+   'Order Failed - Item not Available','Order Failed - Listing Error','Order Failed - Volumetric Product','Product Added to Inventory - IND','Product Added to Inventory - UAE',
+   'Product Delivered - Lost at US Warehouse','Refund Pending by Seller - US','Refund Rejected by Seller','Refunded - Banned Products','Refunded - Delivery Expected after EDD',
+   'Refunded - In Transit Not Received','Refunded - Lost In Transit','Refunded - Product Not Received from Buyer','Refunded - Product Sent to FBA','Refunded - RTO Refused',
+   'Refunded - Shipped to UAE','Refunded - US In Transit','Refunded - US Seller Refund','Refunded - Wrong/Damaged RCVD From US','Refunded by Seller - India','Refunded by Seller - US','Refunded -Shipped to UAE',
+   'RMA Received - Saleable','Wrong Product Received From Seller','RMA Auth - Reverse Pickup Arranged','RMA - Authorised - Seller Issue','Product Not Received From Seller',
+   'RTO - No Contact','RMA - Authorised - Buyer Issue','RTO Received - Saleable','Cancelled Order - Delivered to Customer','RMA Received - Non Saleable'];
+  const m={}; hold.forEach(s=>m[normStatus(s)]='hold'); pend.forEach(s=>m[normStatus(s)]='pending'); return m;
+})();
+
+function dayOf(y,m,d){ return Math.floor(Date.UTC(y,m,d)/MS_DAY); }
+/* Parse any date-ish cell to an integer "days since 1970-01-01" (or null). Placeholder years (1999, 2277...) -> null */
+function pd(v, dq, key){
+  if(v==null || v==='') return null;
+  let day=null;
+  if(typeof v==='number'){ if(!isFinite(v)) return null; day = Math.floor(v) - SERIAL_EPOCH; }
+  else if(v instanceof Date){ if(isNaN(v)) return null; day = dayOf(v.getFullYear(), v.getMonth(), v.getDate()); }
+  else {
+    const s=String(v).trim(); let m;
+    if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})/))) day=dayOf(+m[1],+m[2]-1,+m[3]);
+    else if((m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/))) day=dayOf(+m[3],+m[2]-1,+m[1]);
+    else if(/^\d+(\.\d+)?$/.test(s)) day=Math.floor(parseFloat(s))-SERIAL_EPOCH;
+    else { if(dq && s!=='') dq['?'+key]=(dq['?'+key]||0)+1; return null; }
+  }
+  if(day==null || isNaN(day)) return null;
+  if(day<MIN_VALID_DAY || day>MAX_VALID_DAY){ if(dq) dq[key]=(dq[key]||0)+1; return null; }
+  return day;
+}
+const fmtD = d => d==null ? '' : new Date(d*MS_DAY).toISOString().slice(0,10);
+const monthLabel = key => { if(!key) return '(no date)'; const [y,m]=key.split('-'); return new Date(Date.UTC(+y,+m-1,1)).toLocaleString('en-US',{month:'short',year:'numeric',timeZone:'UTC'}); };
+const normKey = s => String(s==null?'':s).replace(/\s+/g,' ').trim().toLowerCase();
+
+function quantile(sorted, p){
+  if(!sorted.length) return null;
+  const pos=(sorted.length-1)*p, lo=Math.floor(pos), hi=Math.ceil(pos);
+  return sorted[lo]+(sorted[hi]-sorted[lo])*(pos-lo);
+}
+function median(arr){ if(!arr.length) return null; const s=[...arr].sort((a,b)=>a-b); return quantile(s,.5); }
+
+const EMIRATE_MAP = {
+  'dubai':'Dubai','دبي':'Dubai','province of dubai':'Dubai',
+  'abu dhabi':'Abu Dhabi','أبوظبي':'Abu Dhabi','ابوظبي':'Abu Dhabi',
+  'sharjah':'Sharjah','الشارقة':'Sharjah',
+  'ajman':'Ajman','عجمان':'Ajman',
+  'al ain':'Al Ain','العين':'Al Ain',
+  'ras al khaimah':'Ras Al Khaimah','رأس الخيمة':'Ras Al Khaimah',
+  'fujairah':'Fujairah','الفجيرة':'Fujairah',
+  'umm al quwain':'Umm Al Quwain','أم القيوين':'Umm Al Quwain'
+};
+const KSA_STATES = ['riyadh','makkah','hail','eastern province','madinah','tabuk','qassim','الرياض','مكة المكرمة','تبوك','الشرقية','عسير','نجران'];
+function normEmirate(v){
+  const k=String(v||'').trim().toLowerCase(); if(!k) return '(unknown)';
+  if(EMIRATE_MAP[k]) return EMIRATE_MAP[k];
+  if(KSA_STATES.includes(k)) return 'Saudi Arabia (KSA)';
+  return 'Other';
+}
+function normCourier(v){
+  const s=String(v||'').trim(); if(!s) return '(none)';
+  const k=s.toLowerCase().replace(/[^a-z]/g,'');
+  if(k.startsWith('ajex')) return 'AJEX Express';
+  if(k.startsWith('imile')) return 'iMile Express';
+  if(k==='emxuae') return 'EMXUAE';
+  if(k==='emx') return 'EMX';
+  if(k.startsWith('amazoneasy')) return 'Amazon Easy Ship';
+  if(k.startsWith('emiratespost')) return 'Emirates Post';
+  if(k.startsWith('aramex')) return 'Aramex';
+  return s;
+}
+/* Zoho mobiles look like 1503111841 (extra leading 1 + 9-digit UAE mobile) or 503111841. Normalise to +971 5X XXX XXXX */
+function normMobile(v){
+  const d=String(v==null?'':v).replace(/\D/g,'');
+  if(!d) return {raw:'',norm:'',valid:false};
+  let n=d;
+  if(n.startsWith('00971')) n=n.slice(5); else if(n.startsWith('971')) n=n.slice(3);
+  if(n.length===10 && n.startsWith('0')) n=n.slice(1);
+  else if(n.length===10 && n.startsWith('15')) n=n.slice(1);
+  const valid = n.length===9 && n.startsWith('5');
+  return {raw:d, norm: valid ? '+971'+n : '', valid};
+}
+
+function buildLines(rows){
+  if(!rows || rows.length<2) throw new Error('The file has no data rows.');
+  const H = rows[0].map(normKey);
+  const idx={}, missing=[];
+  for(const k in COLS){ idx[k]=H.indexOf(normKey(COLS[k])); if(idx[k]<0 && REQUIRED.includes(k)) missing.push(COLS[k]); }
+  if(missing.length) throw new Error('These required columns were not found: '+missing.join(', '));
+  const dq={placeholder:{}, dupes:0, badOrder:0, gaps:0, fileRows:rows.length-1};
+  const str=(r,k)=>{ const i=idx[k]; if(i<0) return ''; const v=r[i]; return v==null?'':String(v).trim(); };
+  const lines=[];
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i]; if(!r || !r.length) continue;
+    const orderId=str(r,'orderId'), lineNo=str(r,'lineNo'); if(!orderId && !lineNo) continue;
+    const dget=k=> idx[k]<0 ? null : pd(r[idx[k]], dq.placeholder, k);
+    const created=dget('created'), purchased=dget('purchased'), usShip=dget('usShip'), arrived=dget('arrived'),
+          intlShip=dget('intlShip'), bag=dget('bag'), localShip=dget('localShip'), delivered=dget('delivered'), edd=dget('edd');
+    const ms=[created,purchased,usShip,arrived,intlShip,bag,localShip];
+    const status=str(r,'status');
+    const pendAction=PENDING_REFUND_RULES[normStatus(status)]||'';
+    const isDup=/duplicate lead/i.test(status);
+    const refundTxt=str(r,'refund');
+    const refund=/full/i.test(refundTxt)?'Full':/partial/i.test(refundTxt)?'Partial':'';
+    const deliveredFlag = delivered!=null || RE_DELIVERED.test(status);
+    let outcome;
+    if(isDup) outcome='dup';
+    else if(refund) outcome = deliveredFlag ? 'delivered_refunded' : 'refunded_before';
+    else if(pendAction || RE_TERMINATED.test(status)) outcome='terminated_norefund';   /* refund owed but not recorded = PENDING REFUND */
+    else if(deliveredFlag) outcome='delivered';
+    else outcome='active';
+    if(isDup) dq.dupes++;
+
+    let stage=0; for(let s=6;s>=0;s--){ if(ms[s]!=null){ stage=s; break; } }
+    if(RE_DISPATCHED_STATUS.test(status)) stage=Math.max(stage,6);
+    let ref=ms[stage]; if(ref==null){ for(let s=6;s>=0;s--){ if(ms[s]!=null){ ref=ms[s]; break; } } }
+
+    /* data-quality flags */
+    const full=[...ms,delivered]; let prev=null, bad=false;
+    for(const v of full){ if(v==null) continue; if(prev!=null && v<prev){ bad=true; } prev=v; }
+    if(bad) dq.badOrder++;
+    let seenMissing=false, gap=false;
+    for(let s=1;s<7;s++){ if(ms[s]==null) seenMissing=true; else if(seenMissing){ gap=true; } }
+    if(gap) dq.gaps++;
+
+    const mob=normMobile(r[idx.mobile]);
+    const first=str(r,'firstName'), last=str(r,'lastName');
+    const monthKey = created!=null ? fmtD(created).slice(0,7) : '';
+    const sellerRefundDate=dget('sellerRefundDate'), sellerRefundAmt=parseFloat(str(r,'sellerRefundAmt'))||0;
+    /* refunded lines where the parcel should come back: status says delivered / RMA authorised / Amazon refunded "product not received" */
+    const rtoRmaDate=dget('rtoDate'), reversePickup=str(r,'reversePickup');
+    const nrbGroup = (RE_DELIVERED_ANY.test(status) && !RE_LOST.test(status)) ? 'Delivered'
+                   : RE_RMA_AUTH.test(status) ? 'RMA authorised'
+                   : RE_AMZ_PNR.test(status) ? 'Amazon refunded — product not received' : '';
+    lines.push({
+      i, id:str(r,'id'), lineNo, orderId, source:str(r,'source')||'(none)', status, followUp:str(r,'followUp'),
+      name:(first+' '+last).trim(), mobile:mob, email:str(r,'email'), city:str(r,'city'), emirate:normEmirate(str(r,'state')),
+      address:str(r,'address'), title:str(r,'title'), sku:str(r,'sku'), qty:str(r,'qty'),
+      courier:normCourier(str(r,'courier')), tracking:str(r,'tracking'),
+      ms, edd, delivered, refund, refundAmt:parseFloat(str(r,'refundAmt'))||0, refundDate:dget('refundDate'),
+      sellerRefundDate, sellerRefundAmt, sellerRefunded:(sellerRefundDate!=null||sellerRefundAmt>0),
+      pendAction, refundDone:!!refund, rtoRmaDate, reversePickup, nrbGroup,
+      outcome, stage, ref, monthKey, badOrder:bad, linesInOrder:1,
+      risk:'', daysLate:null, projDelay:null, newEta:null, daysInStage:null, stuck:false, daysSinceDispatch:null, dndOver:false
+    });
+  }
+  /* multi-line orders */
+  const byOrder=new Map();
+  for(const l of lines){ let a=byOrder.get(l.orderId); if(!a){ a=[]; byOrder.set(l.orderId,a);} a.push(l); }
+  dq.multiOrders=0; dq.multiDiverge=0;
+  for(const a of byOrder.values()){
+    if(a.length>1){ dq.multiOrders++; if(new Set(a.map(x=>x.status)).size>1) dq.multiDiverge++; }
+    for(const l of a) l.linesInOrder=a.length;
+  }
+  return {lines, dq};
+}
+
+/* Benchmarks from delivered (clean) lines: how long from each milestone to delivery. Used to estimate the chance an order misses its EDD. */
+function buildBench(lines){
+  const rem=[[],[],[],[],[],[],[]];
+  for(const l of lines){
+    if(l.outcome!=='delivered' || l.delivered==null) continue;
+    for(let s=0;s<7;s++){ const m=l.ms[s]; if(m!=null && l.delivered>=m) rem[s].push(l.delivered-m); }
+  }
+  const stages = rem.map(a=>{
+    if(a.length<30) return null;
+    a.sort((x,y)=>x-y);
+    return {n:a.length, arr:a, p50:quantile(a,.5), p75:quantile(a,.75), p90:quantile(a,.9)};
+  });
+  const d=rem[6]; const p90 = d.length ? quantile(d,.9) : 2;   /* dispatch -> delivery: 90% of parcels arrive within this many days */
+  return {stages, dndN: Math.max(2, Math.ceil(p90))};
+}
+const MISS_THRESHOLD = {c70:0.7, c50:0.5, c30:0.3};
+function upperBound(a,x){ let lo=0,hi=a.length; while(lo<hi){ const mid=(lo+hi)>>1; if(a[mid]<=x) lo=mid+1; else hi=mid; } return lo; }
+
+/* As-of dependent classification of every ACTIVE line.
+   For an order at stage s that has already spent `elapsed` days there, look at past delivered orders that were also still
+   undelivered after `elapsed` days at that stage. missProb = share of them that needed longer than the days left until EDD. */
+function evaluate(lines, asOf, bench, pKey){
+  const thr = MISS_THRESHOLD[pKey] ?? 0.5;
+  for(const l of lines){
+    l.risk=''; l.daysLate=null; l.projDelay=null; l.newEta=null; l.daysInStage=null; l.stuck=false; l.daysSinceDispatch=null; l.dndOver=false; l.missProb=null;
+    if(l.outcome!=='active') continue;
+    const ref=l.ref;
+    const b=bench.stages[l.stage];
+    let elapsed=null, surv=0, ub=0;
+    if(ref!=null){
+      elapsed=Math.max(0,asOf-ref); l.daysInStage=asOf-ref;
+      if(b){ ub=upperBound(b.arr,elapsed); surv=b.arr.length-ub; }
+    }
+    if(b && ref!=null){                                     /* realistic new delivery date for messages */
+      const cond = surv>=30 ? b.arr[ub+Math.floor(0.75*(surv-1))] : elapsed+2;
+      l.newEta=Math.max(ref+Math.ceil(cond), asOf+1);
+    }
+    if(l.edd==null) l.risk='unknown';
+    else if(l.edd<asOf){ l.risk='late'; l.daysLate=asOf-l.edd; }
+    else if(b && ref!=null){
+      const w=l.edd-ref;
+      const miss = surv>=30 ? (b.arr.length-upperBound(b.arr,w))/surv : 1;
+      l.missProb=miss;
+      if(miss>=thr){ l.risk='likely'; l.projDelay=Math.max(1,l.newEta-l.edd); } else l.risk='ontrack';
+    } else l.risk='ontrack';
+    if(b && l.daysInStage!=null && l.daysInStage>Math.ceil(b.p90)) l.stuck=true;
+    if(l.stage===6){
+      const d = l.ms[6]!=null ? l.ms[6] : ref;
+      if(d!=null){ l.daysSinceDispatch=asOf-d; l.dndOver = l.daysSinceDispatch>bench.dndN; }
+    }
+  }
+}
+
+/* Which leg of the journey makes late deliveries late? (delivered, clean lines only) */
+function legStats(sub){
+  const dur=LEGS.map(()=>({all:[],late:[],ontime:[]}));
+  const late=[], drivers={}; let deliveredN=0, lateN=0, lateDaysSum=0;
+  const rows=[];
+  for(const l of sub){
+    if(l.outcome!=='delivered' || l.delivered==null || l.edd==null) continue;
+    deliveredN++;
+    const isLate=l.delivered>l.edd; if(isLate){ lateN++; lateDaysSum+=l.delivered-l.edd; }
+    const full=[...l.ms,l.delivered]; const d=[];
+    LEGS.forEach((g,gi)=>{
+      const a=full[g.a], b=full[g.b];
+      if(a!=null && b!=null && b>=a){ const v=b-a; d[gi]=v; dur[gi].all.push(v); (isLate?dur[gi].late:dur[gi].ontime).push(v); }
+      else d[gi]=null;
+    });
+    if(isLate) rows.push(d);
+  }
+  const med=dur.map(x=>median(x.all));
+  for(const d of rows){
+    let best=-1, bestEx=0;
+    d.forEach((v,gi)=>{ if(v==null||med[gi]==null) return; const ex=v-med[gi]; if(ex>bestEx){ bestEx=ex; best=gi; } });
+    const key = best>=0 && bestEx>=1 ? LEGS[best].k : 'none';
+    drivers[key]=(drivers[key]||0)+1;
+  }
+  const avg=a=>a.length? a.reduce((x,y)=>x+y,0)/a.length : null;
+  const table=LEGS.map((g,gi)=>{
+    const all=[...dur[gi].all].sort((x,y)=>x-y);
+    const late=avg(dur[gi].late), ontime=avg(dur[gi].ontime);
+    return {k:g.k,label:g.label,n:all.length,med:med[gi],p90:quantile(all,.9),late,ontime,gap:(late!=null&&ontime!=null)?late-ontime:null};
+  });
+  return {table, drivers, deliveredN, lateN, avgLate: lateN? lateDaysSum/lateN : 0, lateWithLegs: rows.length};
+}
+
+const countBy=(arr,fn)=>{ const m={}; for(const x of arr){ const k=fn(x); m[k]=(m[k]||0)+1; } return m; };
+/* ================= /CORE ================= */
+
+
+/* ================= UI ================= */
+const $=s=>document.querySelector(s);
+const fmt=n=>Number(n||0).toLocaleString('en-US');
+const pct=(n,d)=>{ if(!d) return '—'; const v=100*n/d; return (n>0&&v<0.1)?'<0.1%':v.toFixed(1)+'%'; };
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tick=()=>new Promise(r=>setTimeout(r,30));
+
+let LINES=[], DQ=null, SUB=[], ASOF=0, RAW_ROWS=[];
+const CHARTS={};
+function setStatus(t,cls){ const s=$('#status'); s.textContent=t; s.className=cls||''; }
+
+/* ---------- loading ---------- */
+async function parseXLSX(file){
+  const buf=await file.arrayBuffer(); await tick();
+  setStatus('Parsing spreadsheet — a 30 MB file can take 20–40 seconds…'); await tick();
+  let rows=null;
+  try{
+    const wb=XLSX.read(buf,{type:'array',dense:true,cellFormula:false,cellHTML:false,cellStyles:false,cellNF:false});
+    SERIAL_EPOCH=(wb.Workbook&&wb.Workbook.WBProps&&wb.Workbook.WBProps.date1904)?25569-1462:25569;
+    rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null,blankrows:false});
+  }catch(e){ rows=null; }
+  if(!rows || rows.length<2){
+    const wb=XLSX.read(buf,{type:'array'});
+    SERIAL_EPOCH=(wb.Workbook&&wb.Workbook.WBProps&&wb.Workbook.WBProps.date1904)?25569-1462:25569;
+    rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null,blankrows:false});
+  }
+  return rows;
+}
+function parseCSV(file){
+  return new Promise((res,rej)=>Papa.parse(file,{skipEmptyLines:true,complete:r=>res(r.data),error:rej}));
+}
+async function loadFile(file){
+  setStatus('Reading '+file.name+' ('+(file.size/1048576).toFixed(1)+' MB)…'); await tick();
+  try{
+    const rows=/\.csv$/i.test(file.name) ? await parseCSV(file) : await parseXLSX(file);
+    RAW_ROWS=rows;
+    setStatus('Analysing '+fmt(rows.length-1)+' rows…'); await tick();
+    const {lines,dq}=buildLines(rows);
+    LINES=lines; DQ=dq;
+    initFilters();
+    $('#app').hidden=false;
+    const unread=Object.entries(dq.placeholder||{}).filter(([k])=>k[0]==='?');
+    const recon=`${fmt(dq.fileRows)} rows read = ${fmt(lines.length-dq.dupes)} order lines analysed + ${fmt(dq.dupes)} duplicate leads left out`+((lines.length+0)===dq.fileRows?'':` + ${fmt(dq.fileRows-lines.length)} empty rows skipped`)+'.';
+    if(unread.length) setStatus(`Loaded ${file.name}. ${recon} WARNING — some date cells could not be read: ${unread.map(([k,v])=>k.slice(1)+' ('+fmt(v)+')').join(', ')}. Numbers depending on those dates may be understated.`,'err');
+    else setStatus(`Loaded ${file.name}. ${recon} All date cells were read.`,'ok');
+    recompute();
+  }catch(err){ console.error(err); setStatus('Could not read the file: '+err.message,'err'); }
+}
+$('#file').addEventListener('change',e=>{ const f=e.target.files[0]; if(f) loadFile(f); });
+['dragover','dragenter'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault(); $('#drop').classList.add('over');}));
+['dragleave','drop'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault(); $('#drop').classList.remove('over');}));
+$('#drop').addEventListener('drop',e=>{ const f=e.dataTransfer&&e.dataTransfer.files[0]; if(f) loadFile(f); });
+
+/* ---------- filters ---------- */
+function initFilters(){
+  const srcs=[...new Set(LINES.filter(l=>l.outcome!=='dup').map(l=>l.source))].sort();
+  $('#fSource').innerHTML='<option value="">All lead sources</option>'+srcs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  const months=[...new Set(LINES.map(l=>l.monthKey).filter(Boolean))].sort();
+  $('#fMonth').innerHTML='<option value="">All months</option>'+months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
+  let maxC=0; for(const l of LINES){ if(l.ms[0]!=null && l.ms[0]>maxC) maxC=l.ms[0]; }
+  $('#fAsOf').value=fmtD(maxC); $('#fFrom').value=''; $('#fTo').value='';
+}
+const dateInput=id=>{ const v=$(id).value; if(!v) return null; const m=v.match(/^(\d{4})-(\d{2})-(\d{2})$/); return m?dayOf(+m[1],+m[2]-1,+m[3]):null; };
+['#fSource','#fMonth','#fFrom','#fTo','#fAsOf'].forEach(id=>$(id).addEventListener('change',()=>recompute()));
+$('#fReset').addEventListener('click',()=>{ $('#fSource').value=''; $('#fMonth').value=''; initFilters(); recompute(); });
+
+function recompute(){
+  if(!LINES.length) return;
+  ASOF=dateInput('#fAsOf')||Math.floor(Date.now()/MS_DAY);
+  const src=$('#fSource').value, month=$('#fMonth').value, from=dateInput('#fFrom'), to=dateInput('#fTo');
+  SUB=LINES.filter(l=>l.outcome!=='dup' && (!src||l.source===src) && (!month||l.monthKey===month)
+    && (from==null || (l.edd!=null && l.edd>=from)) && (to==null || (l.edd!=null && l.edd<=to)));
+  const bits=[]; if(src) bits.push(src); if(month) bits.push(monthLabel(month)); if(from!=null||to!=null) bits.push('EDD '+(from!=null?fmtD(from):'…')+' to '+(to!=null?fmtD(to):'…'));
+  $('#fSummary').textContent=(bits.length?`Showing ${fmt(SUB.length)} of ${fmt(LINES.length-DQ.dupes)} order lines — ${bits.join(', ')}. `:`Showing all ${fmt(SUB.length)} order lines. `)+`As-of ${fmtD(ASOF)}.`;
+  renderAll();
+}
+function renderAll(){ themeChart(); renderPurchase(); renderRefunds(); renderNotReturned(); renderPending(); renderDg(); renderShipments(); renderPd(); renderDownload(); }
+function renderDownload(){
+  const cols = RAW_ROWS[0] ? RAW_ROWS[0].length : 0;
+  $('#kpiDownload').innerHTML=
+    kpi('',fmt(DQ.fileRows),'Rows in your uploaded file','Every row gets a Remarks 1')+
+    kpi('',fmt(cols+2),'Columns in the download','Your '+fmt(cols)+' original columns + Remarks 1 + Remarks 2');
+}
+$('#downloadReportBtn').addEventListener('click',()=>saveCSV('zoho-report-with-remarks-'+fmtD(ASOF)+'.csv',fullReportCSV()));
+
+/* ---------- chart helpers ---------- */
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function themeChart(){
+  if(typeof Chart==='undefined') return;
+  Chart.defaults.color=cssv('--muted'); Chart.defaults.borderColor=cssv('--line'); Chart.defaults.font.family="Inter, system-ui, sans-serif";
+}
+if(typeof Chart!=='undefined' && typeof ChartDataLabels!=='undefined'){ Chart.register(ChartDataLabels); Chart.defaults.set('plugins.datalabels',{display:false}); }
+function mk(id,cfg){
+  const el=document.getElementById(id); if(!el) return;
+  if(CHARTS[id]){ CHARTS[id].destroy(); delete CHARTS[id]; }
+  if(typeof Chart==='undefined'){ el.parentElement.innerHTML='<div class="empty">The chart library did not load (network blocked?).</div>'; return; }
+  CHARTS[id]=new Chart(el,cfg);
+}
+function vbar(id,labels,data,colors,denom){
+  mk(id,{type:'bar',data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:4,maxBarThickness:90}]},options:{
+    responsive:true,maintainAspectRatio:false,layout:{padding:{top:38}},
+    plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'end',offset:2,color:cssv('--ink'),font:{weight:'600',size:12},
+      formatter:v=>[fmt(v),'('+pct(v,denom)+')']}},
+    scales:{y:{beginAtZero:true,grace:'8%',grid:{color:cssv('--line')},ticks:{callback:v=>fmt(v)}},x:{grid:{display:false},ticks:{font:{size:12}}}}}});
+}
+const kpi=(cls,num,label,sub)=>`<div class="kpi ${cls||''}"><div class="num">${num}</div><div class="lbl">${label}</div>${sub?`<div class="sub">${sub}</div>`:''}</div>`;
+const kpiP=(cls,n,d,label,sub)=>kpi(cls,`${fmt(n)} <span class="pctsmall">(${pct(n,d)})</span>`,label,sub);
+
+/* ---------- purchase delays ---------- */
+function renderPurchase(){
+  const S=SUB, T=S.length;
+  const delay=l=>l.ms[1]-l.ms[0];
+  /* "Purchased" = has a purchase date, full stop — matches a plain Excel filter on the Purchase Date column */
+  const purchased=S.filter(l=>l.ms[1]!=null);
+  const P=purchased.length;
+  /* the day-count chart can only place lines with a valid, non-negative gap to Order Creation Date */
+  const chartPop=purchased.filter(l=>l.ms[0]!=null && delay(l)>=0);
+  const unplaced=P-chartPop.length;
+  const B=[
+    {label:'Same day',  test:d=>d===0,            color:cssv('--good'),   css:'var(--good)'},
+    {label:'1 day',     test:d=>d===1,            color:cssv('--good2'),  css:'var(--good2)'},
+    {label:'2 days',    test:d=>d===2,            color:cssv('--warn'),   css:'var(--warn)'},
+    {label:'3 days',    test:d=>d===3,            color:cssv('--accent'), css:'var(--accent)'},
+    {label:'4–7 days',  test:d=>d>=4&&d<=7,       color:cssv('--bad'),    css:'var(--bad)'},
+    {label:'8+ days',   test:d=>d>=8,             color:cssv('--bad2'),   css:'var(--bad2)'}
+  ];
+  const counts=B.map(b=>chartPop.filter(l=>b.test(delay(l))).length);
+  const within1=counts[0]+counts[1], late=counts[2]+counts[3]+counts[4]+counts[5];
+  const notP=S.filter(l=>l.ms[1]==null);
+  const cancelled=notP.filter(l=>l.outcome==='refunded_before'||l.outcome==='terminated_norefund'||l.outcome==='delivered_refunded');
+  const waiting=notP.filter(l=>l.outcome==='active');
+  const noDate=notP.filter(l=>l.outcome==='delivered');
+  const oldest=waiting.reduce((m,l)=>Math.max(m,l.ms[0]!=null?ASOF-l.ms[0]:0),0);
+  const ds=chartPop.map(delay).sort((a,b)=>a-b);
+  const med=ds.length?quantile(ds,.5):0, p90=ds.length?quantile(ds,.9):0;
+
+  $('#kpiPurchase').innerHTML=
+    kpi('',fmt(T),'Order lines analysed')+
+    kpiP('',P,T,'Purchased','Has a purchase date')+
+    kpiP('good',within1,P,'Purchased same or next day')+
+    kpiP('warn',late,P,'Purchased after 2+ days','Delayed purchases')+
+    kpiP('bad',waiting.length,T,'Still waiting to be purchased',waiting.length?`Oldest waiting ${fmt(oldest)} days`:'Nothing waiting')+
+    kpiP('',cancelled.length,T,'Never purchased — cancelled / refunded');
+
+  vbar('cPurchase',B.map(b=>b.label),counts,B.map(b=>b.color),P);
+  $('#purchaseNote').textContent=
+    `Median ${med} day(s) from order to purchase; 90% of purchases happen within ${p90} day(s).`+
+    (unplaced?` ${fmt(unplaced)} purchased line(s) have no Order Creation Date, or a purchase date before it, so they're counted in Purchased above but left out of the day-count chart.`:'')+
+    (noDate.length?` ${fmt(noDate.length)} delivered lines have no purchase date recorded and are not in the chart.`:'');
+
+  const npm=new Map();
+  for(const l of cancelled){
+    const s=l.status||'(blank)'; let g=npm.get(s); if(!g){ g={s,n:0,age:0,ageN:0,oldest:0}; npm.set(s,g); }
+    g.n++; const a=ageOf(l); if(a!=null){ g.age+=a; g.ageN++; if(a>g.oldest) g.oldest=a; }
+  }
+  const nprow=[...npm.values()].sort((a,b)=>b.n-a.n||a.s.localeCompare(b.s)), npmax=nprow.length?nprow[0].n:0;
+  $('#neverPurchasedRows').innerHTML=nprow.length?`<table class="rl"><thead><tr>${['Lead status','Lines','% of never-purchased','Average age (days)','Oldest (days)'].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>`+
+    nprow.map(g=>`<tr><td class="st">${esc(g.s)}</td><td><span class="r">${fmt(g.n)}</span></td><td><span class="mini"><i style="width:${npmax?Math.max(2,100*g.n/npmax):0}%"></i></span>${pct(g.n,cancelled.length)}</td><td>${one1(g.ageN?g.age/g.ageN:0)}</td><td>${fmt(g.oldest)}</td></tr>`).join('')+'</tbody></table>'
+    :'<div class="empty">No never-purchased lines for the current filters.</div>';
+}
+
+
+/* ---------- scrolling cards ---------- */
+const CARDS={refund:[]};
+const CARD_SORT={refund:'#refundSort'};
+const CARD_BOX={refund:'#refundCards'};
+const RL_HEAD={
+  refund:['Lead status','Refunded lines','% of all refunds','Full','Partial','Seller refund received','% of status']
+};
+function rowHTML(key,it,maxShare){
+  const share=100*it.count/(it.share||1), w=maxShare?Math.max(2,100*share/maxShare):0;
+  const bar=`<span class="mini"><i style="width:${w}%"></i></span>${pct(it.count,it.share)}`;
+  return `<tr><td class="st">${esc(it.title)}</td>`+
+    (key==='pending'?`<td>${it.tag||''}</td>`:'')+
+    `<td>${fmt(it.count)}</td><td>${bar}</td>`+it.cells.map(c=>`<td>${c}</td>`).join('')+'</tr>';
+}
+function drawCards(key){
+  const box=$(CARD_BOX[key]); if(!box) return;
+  const mode=$(CARD_SORT[key]).value;
+  const items=[...CARDS[key]];
+  if(mode==='metric') items.sort((a,b)=> key==='refund' ? (a.metric-b.metric)||(b.sortN-a.sortN) : (b.metric-a.metric)||(b.sortN-a.sortN));
+  else if(mode==='age') items.sort((a,b)=>(b.age||0)-(a.age||0)||(b.sortN-a.sortN));
+  else items.sort((a,b)=>b.sortN-a.sortN);
+  const maxShare=items.reduce((m,i)=>Math.max(m,100*i.count/(i.share||1)),0);
+  const head='<thead><tr>'+RL_HEAD[key].map(h=>`<th>${h}</th>`).join('')+'</tr></thead>';
+  box.innerHTML=items.length?`<table class="rl">${head}<tbody>${items.map(i=>rowHTML(key,i,maxShare)).join('')}</tbody></table>`:'<div class="empty">Nothing to show for the current filters.</div>';
+}
+Object.keys(CARD_SORT).forEach(k=>$(CARD_SORT[k]).addEventListener('change',()=>drawCards(k)));
+
+/* ---------- refunds ---------- */
+function renderRefunds(){
+  const S=SUB, T=S.length;
+  const full=S.filter(l=>l.refund==='Full'), part=S.filter(l=>l.refund==='Partial'), ref=[...full,...part];
+  const nRef=T-ref.length;
+  const got=a=>a.filter(l=>l.sellerRefunded).length;
+  $('#kpiRefund').innerHTML=
+    kpi('',fmt(T),'Order lines analysed')+
+    kpiP('bad',ref.length,T,'Refunded (full + partial)')+
+    kpiP('bad',full.length,T,'Full refund')+
+    kpiP('warn',part.length,T,'Partial refund')+
+    kpiP('good',nRef,T,'Not refunded')+
+    kpiP('good',got(ref),ref.length,'Refunds recovered from the seller','Share of refunded lines');
+  const other=S.filter(l=>l.sellerRefunded && !l.refundDone);
+  const otherOut=other.filter(l=>l.outcome!=='terminated_norefund').length;
+  $('#refundNote').textContent=other.length?`${fmt(other.length)} lines have a seller refund but no customer refund recorded: ${fmt(other.length-otherOut)} of them are counted in Pending refunds below${otherOut?`; ${fmt(otherOut)} are not counted there because their lead status is neither on your list nor a cancelled / returned status (worth a look)`:''}.`:'';
+  const gm=new Map();
+  for(const l of ref){ const s=l.status||'(blank)'; let g=gm.get(s); if(!g){ g={s,n:0,full:0,part:0,got:0}; gm.set(s,g); } g.n++; if(l.refund==='Full') g.full++; else g.part++; if(l.sellerRefunded) g.got++; }
+  CARDS.refund=[...gm.values()].map(g=>({title:g.s,count:g.n,share:ref.length,sortN:g.n,metric:g.got/g.n,
+    cells:[fmt(g.full),fmt(g.part),fmt(g.got),pct(g.got,g.n)]}));
+  drawCards('refund');
+}
+
+/* ---------- refunded but product not received back ---------- */
+let NRB_ROWS=[];
+function renderNotReturned(){
+  const ref=SUB.filter(l=>l.refundDone);
+  const grp=ref.filter(l=>l.nrbGroup);
+  const tracked=l=>!!l.reversePickup||l.rtoRmaDate!=null;
+  const back=grp.filter(tracked), nrb=grp.filter(l=>!tracked(l));
+  const G=['Delivered','RMA authorised','Amazon refunded — product not received'];
+  const g=k=>nrb.filter(l=>l.nrbGroup===k).length;
+  $('#kpiNrb').innerHTML=
+    kpiP('',grp.length,ref.length,'Refunded lines with a delivered / RMA authorised / Amazon-refunded status','Share of all refunded lines')+
+    kpiP('good',back.length,grp.length,'Reverse pickup update found','Product return is tracked')+
+    kpiP('bad',nrb.length,grp.length,'Refunded, product not received back','No reverse pickup update')+
+    kpiP('bad',g(G[0]),nrb.length,'…of which status is delivered')+
+    kpiP('bad',g(G[1]),nrb.length,'…of which RMA authorised')+
+    kpiP('bad',g(G[2]),nrb.length,'…of which Amazon refunded, product not received');
+  const extra=ref.filter(l=>!l.nrbGroup&&l.delivered!=null&&!tracked(l)).length;
+  $('#nrbNote').textContent=extra?`${fmt(extra)} more refunded lines have a delivery date and no reverse pickup update, but their lead status is not one of the three above, so they are not counted here.`:'';
+  const gm=new Map();
+  for(const l of grp){ const s=l.status||'(blank)'; let o=gm.get(s); if(!o){ o={s,grp:l.nrbGroup,n:0,back:0,nrb:0}; gm.set(s,o); } o.n++; if(tracked(l)) o.back++; else o.nrb++; }
+  const rows=[...gm.values()].sort((a,b)=>b.nrb-a.nrb||b.n-a.n);
+  const maxShare=rows.reduce((m,o)=>Math.max(m,o.n),0);
+  const head=['Lead status','Refunded lines','% of these lines','Reverse pickup found','% of status','No update — not received back','% of status'];
+  $('#nrbRows').innerHTML=rows.length?`<table class="rl"><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>`+
+    rows.map(o=>`<tr><td class="st">${esc(o.s)}</td><td>${fmt(o.n)}</td><td><span class="mini"><i style="width:${maxShare?Math.max(2,100*o.n/maxShare):0}%"></i></span>${pct(o.n,grp.length)}</td>`+
+      `<td><span class="g">${fmt(o.back)}</span></td><td><span class="g">${pct(o.back,o.n)}</span></td><td><span class="r">${fmt(o.nrb)}</span></td><td><span class="r">${pct(o.nrb,o.n)}</span></td></tr>`).join('')+'</tbody></table>'
+    :'<div class="empty">No refunded lines with these statuses for the current filters.</div>';
+  NRB_ROWS=[...nrb];
+}
+function nrbCSV(){
+  const head=['Amazon order ID','Zoho order no.','Customer','Mobile (+971)','Email','Emirate','Address','Lead status','Group','Refund','Refund date','Delivered on','Order date','Lead source','Last-mile courier','Tracking no.','Seller refund received','Product'];
+  const rows=NRB_ROWS.map(l=>[l.orderId,l.lineNo,l.name,mobileOut(l),l.email,l.emirate,l.address,l.status,l.nrbGroup,l.refund,fmtD(l.refundDate),fmtD(l.delivered),fmtD(l.ms[0]),l.source,l.courier,l.tracking,l.sellerRefunded?'Yes':'No',l.title]);
+  return '\uFEFF'+[head,...rows].map(r=>r.map(csvCell).join(',')).join('\r\n');
+}
+
+/* ---------- DG products: EDD brief ---------- */
+function renderDg(){
+  const dg=SUB.filter(l=>l.outcome==='active' && RE_DG.test(l.status));
+  const other=SUB.filter(l=>l.outcome!=='active' && RE_DG.test(l.status)).length;
+  const total=dg.length, withEdd=dg.filter(l=>l.edd!=null), noEdd=total-withEdd.length;
+  const d=l=>l.edd-ASOF;
+  const breached=withEdd.filter(l=>d(l)<0), today=withEdd.filter(l=>d(l)===0), w12=withEdd.filter(l=>d(l)>=1&&d(l)<=2),
+        w34=withEdd.filter(l=>d(l)>=3&&d(l)<=4), w5=withEdd.filter(l=>d(l)>=5);
+  const over=breached.map(l=>-d(l));
+  $('#kpiDg').innerHTML=
+    kpi('',fmt(total),'DG products held (not delivered)',`${fmt(new Set(dg.map(l=>l.orderId)).size)} Amazon orders`)+
+    kpiP('bad',breached.length,total,'EDD breached',breached.length?`Average ${one1(over.reduce((a,b)=>a+b,0)/over.length)} days overdue · oldest ${fmt(Math.max(...over))}`:'')+
+    kpiP('warn',today.length,total,'EDD breaches today')+
+    kpiP('warn',w12.length,total,'EDD will breach in 1–2 days')+
+    kpiP('',w34.length,total,'EDD will breach in 3–4 days')+
+    kpiP('good',w5.length,total,'EDD will breach in 5+ days');
+  $('#dgNote').textContent=(other?`${fmt(other)} line(s) with a DG status already have a delivery date or refund and are left out. `:'')+(noEdd?`${fmt(noEdd)} DG line(s) have no EDD and are not in the cards above.`:'');
+  const m=new Map();
+  for(const l of dg){ const k=l.edd==null?-1e9:l.edd; m.set(k,(m.get(k)||0)+1); }
+  const rows=[...m.entries()].sort((a,b)=>a[0]-b[0]), mx=rows.reduce((s,r)=>Math.max(s,r[1]),0);
+  let cum=0;
+  $('#dgRows').innerHTML=rows.length?`<table class="rl"><thead><tr>${['EDD','Against the as-of date','DG order lines','% of DG lines','Cumulative %'].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>`+
+    rows.map(([k,n])=>{
+      cum+=n;
+      const noe=k===-1e9, dd=noe?null:k-ASOF;
+      const lab=noe?'No EDD':dd<0?`Breached — ${-dd} day${-dd===1?'':'s'} overdue`:dd===0?'Breaches today':`Will breach in ${dd} day${dd===1?'':'s'}`;
+      const cls=noe?'m':dd<0?'r':dd<=4?'w':'g';
+      return `<tr><td class="st">${noe?'—':fmtD(k)}</td><td><span class="${cls}">${lab}</span></td><td>${fmt(n)}</td><td><span class="mini"><i style="width:${mx?Math.max(2,100*n/mx):0}%"></i></span>${pct(n,total)}</td><td>${pct(cum,total)}</td></tr>`;
+    }).join('')+'</tbody></table>':'<div class="empty">No DG products held for the current filters.</div>';
+}
+
+/* ---------- Shipments: delivered / on time / delay / pending ---------- */
+function renderShipments(){
+  const ship=SUB.filter(l=>l.outcome==='delivered'||l.outcome==='active');
+  const delivered=ship.filter(l=>l.outcome==='delivered'), pending=ship.filter(l=>l.outcome==='active');
+  const ontime=delivered.filter(l=>l.delivered!=null&&l.edd!=null&&l.delivered<=l.edd);
+  const delay=delivered.filter(l=>l.delivered!=null&&l.edd!=null&&l.delivered>l.edd);
+  const lateDays=delay.map(l=>l.delivered-l.edd), avgLate=lateDays.length?lateDays.reduce((a,b)=>a+b,0)/lateDays.length:0;
+  const pastEdd=pending.filter(l=>l.edd!=null&&l.edd<ASOF).length;
+  $('#kpiShip').innerHTML=
+    kpi('',fmt(ship.length),'Total shipments','Not refunded, no pending refund')+
+    kpiP('good',delivered.length,ship.length,'Delivered')+
+    kpiP('good',ontime.length,delivered.length,'Delivered on time','On or before the EDD')+
+    kpiP('bad',delay.length,delivered.length,'Delivered with delay',delay.length?`Average ${one1(avgLate)} days after the EDD`:'')+
+    kpiP('warn',pending.length,ship.length,'Pending to deliver',`${fmt(pastEdd)} already past the EDD (${pct(pastEdd,pending.length)})`);
+  const cannot=delivered.filter(l=>l.delivered==null||l.edd==null);
+  $('#shipFlag').innerHTML=kpi(cannot.length?'warn':'good',fmt(cannot.length),'Delivered, but no delivery date or EDD to compare');
+}
+
+
+/* ---------- Pending to deliver: shipped vs not shipped (from the Zoho shipping dates) ---------- */
+const SHIP_STAGE={
+  0:['No purchase date yet','Order Creation Date only'],
+  1:['Purchased — no shipping date yet','Purchase Date'],
+  2:['Shipped from India','US Shipping Date'],
+  3:['Delivered in UAE','Delivered at US'],
+  4:['Shipped from customs to last mile','International Shipping Date'],
+  5:['Received by last-mile partner','Bag Received Date'],
+  6:['Shipped by last mile to customer','Local Shipping Date']
+};
+const dateStage=l=>{ for(let s=6;s>=1;s--){ if(l.ms[s]!=null) return s; } return 0; };
+const eddBucket=l=>{ if(l.edd==null) return 'none'; const d=l.edd-ASOF; return d<0?'breached':d===0?'today':d<=2?'w12':d<=4?'w34':'w5'; };
+
+/* ---------- Full report export: Remarks 1 = the dashboard header a line belongs to (every line); Remarks 2 = the sub-grouping shown under that header ---------- */
+function classifyHeader(l){
+  if(l.outcome==='dup') return 'Duplicate lead';
+  const refunded = l.outcome==='delivered_refunded' || l.outcome==='refunded_before';
+  if(l.ms[1]==null && (refunded || l.outcome==='terminated_norefund')) return 'Never purchased — cancelled / refunded';
+  if(refunded){
+    const grp=(RE_DELIVERED_ANY.test(l.status)&&!RE_LOST.test(l.status)) || RE_RMA_AUTH.test(l.status) || RE_AMZ_PNR.test(l.status);
+    const tracked=!!l.reversePickup || l.rtoRmaDate!=null;
+    return (grp && !tracked) ? 'Refunded, product not received back' : 'Refunded';
+  }
+  if(l.outcome==='terminated_norefund') return 'Pending refunds';
+  if(l.outcome==='delivered') return 'Delivered';
+  return RE_DG.test(l.status) ? 'DG products — EDD brief' : 'Pending to deliver';   /* outcome === 'active' */
+}
+const EDD_SUB={none:'No EDD',breached:'EDD breached',today:'EDD breaches today',w12:'EDD will breach in 1–2 days',w34:'EDD will breach in 3–4 days',w5:'EDD will breach in 5+ days'};
+function classifySub(l, header){
+  switch(header){
+    case 'Duplicate lead': return '';
+    case 'Delivered': return (l.delivered!=null && l.edd!=null) ? (l.delivered<=l.edd ? 'Delivered on time' : 'Delivered with delay') : 'No delivery date or EDD to compare';
+    case 'Refunded, product not received back': return 'No reverse pickup update';
+    case 'DG products — EDD brief': return EDD_SUB[eddBucket(l)];
+    case 'Pending to deliver': return dateStage(l)>=2 ? 'Shipped' : 'Not shipped';
+    default: return l.status || '(blank)';   /* Never purchased, Refunded, Pending refunds: the dashboard groups these by Zoho lead status */
+  }
+}
+function fullReportCSV(){
+  const headerOf=new Map(), subOf=new Map();
+  for(const l of LINES){ const h=classifyHeader(l); headerOf.set(l.i,h); subOf.set(l.i,classifySub(l,h)); }
+  const header=[...RAW_ROWS[0],'Remarks 1','Remarks 2'];
+  const out=[header.map(csvCell).join(',')];
+  for(let i=1;i<RAW_ROWS.length;i++){
+    const r=RAW_ROWS[i]||[];
+    const h=headerOf.has(i)?headerOf.get(i):'', s=subOf.has(i)?subOf.get(i):'';
+    out.push([...r,h,s].map(csvCell).join(','));
+  }
+  return '\uFEFF'+out.join('\r\n');
+}
+/* one line per EDD date: how far it is from the report as-of date, lines, share and cumulative share */
+function eddDateRows(sel,arr){
+  const total=arr.length, m=new Map();
+  for(const l of arr){ const k=l.edd==null?-1e9:l.edd; m.set(k,(m.get(k)||0)+1); }
+  const rows=[...m.entries()].sort((a,b)=>a[0]-b[0]), mx=rows.reduce((s,r)=>Math.max(s,r[1]),0);
+  let cum=0;
+  $(sel).innerHTML=rows.length?`<table class="rl"><thead><tr>${['EDD','Against the as-of date','Order lines','% of this group','Cumulative %'].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>`+
+    rows.map(([k,n])=>{
+      cum+=n;
+      const noe=k===-1e9, dd=noe?null:k-ASOF;
+      const lab=noe?'No EDD':dd<0?`Breached — ${-dd} day${-dd===1?'':'s'} overdue`:dd===0?'Breaches today':`Will breach in ${dd} day${dd===1?'':'s'}`;
+      const cls=noe?'m':dd<0?'r':dd<=4?'w':'g';
+      return `<tr><td class="st">${noe?'—':fmtD(k)}</td><td><span class="${cls}">${lab}</span></td><td>${fmt(n)}</td><td><span class="mini"><i style="width:${mx?Math.max(2,100*n/mx):0}%"></i></span>${pct(n,total)}</td><td>${pct(cum,total)}</td></tr>`;
+    }).join('')+'</tbody></table>':'<div class="empty">Nothing here for the current filters.</div>';
+}
+
+function renderPd(){
+  const ship=SUB.filter(l=>l.outcome==='delivered'||l.outcome==='active');
+  const pend=SUB.filter(l=>l.outcome==='active');
+  const sh=pend.filter(l=>dateStage(l)>=2), ns=pend.filter(l=>dateStage(l)<2);
+  const past=a=>a.filter(l=>eddBucket(l)==='breached').length;
+  const awaiting=ns.filter(l=>dateStage(l)===0).length, purchasedNs=ns.length-awaiting;
+  $('#kpiPd').innerHTML=
+    kpiP('warn',pend.length,ship.length,'Pending to deliver','Share of total shipments')+
+    kpiP('good',sh.length,pend.length,'Shipped',`${fmt(past(sh))} past EDD (${pct(past(sh),sh.length)})`)+
+    kpiP('bad',ns.length,pend.length,'Not shipped',`${fmt(past(ns))} past EDD (${pct(past(ns),ns.length)})`)+
+    kpiP('',awaiting,ns.length,'Not shipped — no purchase date yet')+
+    kpiP('',purchasedNs,ns.length,'Not shipped — purchased, no shipping date');
+  const B=['breached','today','w12','w34','w5'];
+  const cnt=a=>{ const c={breached:0,today:0,w12:0,w34:0,w5:0,none:0}; for(const l of a) c[eddBucket(l)]++; return c; };
+  const cards=(sel,arr,title)=>{
+    const c=cnt(arr), n=arr.length;
+    $(sel).innerHTML=kpi('',fmt(n),title,'Pending to deliver')+
+      kpiP('bad',c.breached,n,'EDD breached',c.breached?(()=>{ const o=arr.filter(l=>eddBucket(l)==='breached').map(l=>ASOF-l.edd); return `Average ${one1(o.reduce((a,b)=>a+b,0)/o.length)} days overdue · oldest ${fmt(Math.max(...o))}`; })():'')+
+      kpiP('warn',c.today,n,'EDD breaches today')+
+      kpiP('warn',c.w12,n,'EDD will breach in 1–2 days')+
+      kpiP('',c.w34,n,'EDD will breach in 3–4 days')+
+      kpiP('good',c.w5,n,'EDD will breach in 5+ days');
+  };
+  cards('#pdShippedCards',sh,'Shipped'); cards('#pdNotShippedCards',ns,'Not shipped');
+  const table=(sel,arr,stages)=>{
+    const head=['Zoho shipping information','Order lines','% of group','EDD breached','% breached','Breaches today','In 1–2 days','In 3–4 days','In 5+ days'];
+    const rows=stages.map(s=>{ const a=arr.filter(l=>dateStage(l)===s), c=cnt(a); return {s,a,c,n:a.length}; });
+    const tot=cnt(arr), mx=rows.reduce((m,r)=>Math.max(m,r.n),0);
+    const line=(label,sub,n,c,barW,bold)=>`<tr><td class="st">${label}${sub?` <span class="m" style="font-weight:400;">· ${sub}</span>`:''}</td><td>${bold?'<b>'+fmt(n)+'</b>':fmt(n)}</td><td>${barW==null?'':`<span class="mini"><i style="width:${barW}%"></i></span>`}${pct(n,arr.length)}</td><td><span class="r">${fmt(c.breached)}</span></td><td><span class="r">${pct(c.breached,n)}</span></td><td>${fmt(c.today)}</td><td>${fmt(c.w12)}</td><td>${fmt(c.w34)}</td><td>${fmt(c.w5)}</td></tr>`;
+    $(sel).innerHTML=`<table class="rl"><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>`+
+      rows.map(r=>line(esc(SHIP_STAGE[r.s][0]),esc(SHIP_STAGE[r.s][1]),r.n,r.c,mx?Math.max(r.n?2:0,100*r.n/mx):0,false)).join('')+
+      `<tr style="background:var(--field);"><td class="st">Total</td><td><b>${fmt(arr.length)}</b></td><td>${pct(arr.length,arr.length)}</td><td><span class="r"><b>${fmt(tot.breached)}</b></span></td><td><span class="r"><b>${pct(tot.breached,arr.length)}</b></span></td><td><b>${fmt(tot.today)}</b></td><td><b>${fmt(tot.w12)}</b></td><td><b>${fmt(tot.w34)}</b></td><td><b>${fmt(tot.w5)}</b></td></tr></tbody></table>`;
+  };
+  table('#pdShipped',sh,[2,3,4,5,6]); table('#pdNotShipped',ns,[0,1]);
+  eddDateRows('#pdShippedEdd',sh); eddDateRows('#pdNotShippedEdd',ns);
+  const noEdd=pend.filter(l=>l.edd==null).length;
+  $('#pdNote').textContent=noEdd?`${fmt(noEdd)} pending line(s) have no EDD and are not in the EDD columns.`:'';
+}
+
+/* ---------- pending refunds ---------- */
+let PENDING_ROWS=[];
+const ageOf=l=>l.ms[0]!=null?ASOF-l.ms[0]:null;
+function renderPending(){
+  const S=SUB, T=S.length;
+  const pend=S.filter(l=>l.outcome==='terminated_norefund');
+  const onList=pend.filter(l=>l.pendAction).length, other=pend.length-onList;
+  const withDel=pend.filter(l=>l.delivered!=null).length;
+  const ages=pend.map(ageOf).filter(a=>a!=null);
+  const avgAge=ages.length?ages.reduce((a,b)=>a+b,0)/ages.length:0, oldest=ages.length?Math.max(...ages):0;
+  $('#kpiPending').innerHTML=
+    kpiP('bad',pend.length,T,'Pending refunds','Refund owed, Refund column empty · share of all order lines');
+  const gm=new Map();
+  for(const l of pend){
+    const s=l.status||'(blank)'; let g=gm.get(s); if(!g){ g={s,list:l.pendAction?'Yes':'No',n:0,age:0,ageN:0,oldest:0}; gm.set(s,g); }
+    g.n++; const a=ageOf(l); if(a!=null){ g.age+=a; g.ageN++; if(a>g.oldest) g.oldest=a; }
+  }
+  const prow=[...gm.values()].sort((a,b)=>b.n-a.n||a.s.localeCompare(b.s)), pmax=prow.length?prow[0].n:0;
+  $('#pendingRows').innerHTML=prow.length?`<table class="rl"><thead><tr>${['Lead status','Pending refund lines','% of all pending','On your list','Average age (days)','Oldest (days)'].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>`+
+    prow.map(g=>`<tr><td class="st">${esc(g.s)}</td><td><span class="r">${fmt(g.n)}</span></td><td><span class="mini"><i style="width:${pmax?Math.max(2,100*g.n/pmax):0}%"></i></span>${pct(g.n,pend.length)}</td><td>${g.list}</td><td>${one1(g.ageN?g.age/g.ageN:0)}</td><td>${fmt(g.oldest)}</td></tr>`).join('')+'</tbody></table>'
+    :'<div class="empty">No pending refunds for the current filters.</div>';
+  $('#pendingNote').textContent=`Pending refunds are ${pct(pend.length,T)} of all order lines.`;
+  PENDING_ROWS=[...pend];
+}
+const one1=n=>(Math.round(n*10)/10).toString();
+const mobileOut=l=>l.mobile.valid?l.mobile.norm:(l.mobile.raw?l.mobile.raw+' (check number)':'');
+const csvCell=v=>{ const s=String(v==null?'':v); return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+function pendingCSV(){
+  const head=['Amazon order ID','Zoho order no.','Customer','Mobile (+971)','Email','Lead status','On your pending-refund list','Lead source','Order date','EDD','Age (days)','Delivered on','Seller refund received','Seller refund date','Product'];
+  const rows=PENDING_ROWS.map(l=>[l.orderId,l.lineNo,l.name,mobileOut(l),l.email,l.status,l.pendAction?'Yes':'No',l.source,fmtD(l.ms[0]),fmtD(l.edd),ageOf(l)==null?'':ageOf(l),fmtD(l.delivered),l.sellerRefunded?'Yes':'No',fmtD(l.sellerRefundDate),l.title]);
+  return '\uFEFF'+[head,...rows].map(r=>r.map(csvCell).join(',')).join('\r\n');
+}
+async function saveCSV(name,text){
+  try{
+    const dl=(window.claude&&window.claude.use)?await window.claude.use('downloads'):null;
+    if(dl){ await dl.save({filename:name,data:text}); return; }
+  }catch(e){ if(e&&e.code==='declined') return; }
+  const blob=new Blob([text],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+
+document.querySelectorAll('#sidebar nav a').forEach(a=>a.addEventListener('click',e=>{ e.preventDefault(); const t=document.querySelector(a.getAttribute('href')); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); }));
+if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ if(LINES.length) renderAll(); });
+new MutationObserver(()=>{ if(LINES.length) renderAll(); }).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+</script>
+</body>
+</html>
