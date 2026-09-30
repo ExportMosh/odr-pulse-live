@@ -266,7 +266,7 @@
       <section id="pending">
         <div class="panel">
           <h2 class="cardtitle">Pending refunds</h2>
-          <p class="desc">A line is a <b>pending refund</b> when the customer's refund is owed but not recorded: its Zoho lead status is on your list (customer cancellation, order failed / cancelled, returned to inventory, refunded-by-seller and similar) <b>or</b> it is another cancelled, failed or returned status (RMA / RTO, FBA, lost, damaged, wrong or not-received item), <b>and</b> the Refund column is still empty. These lines are left out of Total shipments.</p>
+          <p class="desc">A line is a <b>pending refund</b> when the customer's refund is owed but not recorded: its Zoho lead status is on your list (customer cancellation, order failed / cancelled, returned to inventory, refunded-by-seller and similar) <b>or</b> it is another cancelled, failed or returned status (RMA / RTO, FBA, lost, damaged, wrong or not-received item), <b>and</b> the Refund column is still empty. These lines are left out of Total shipments. Lines that were <b>never purchased</b> are counted in "Never purchased — cancelled / refunded" above instead of here, so a line is never counted twice.</p>
           <div class="kpis" id="kpiPending"></div>
           <div class="note" id="pendingNote" style="margin-top:12px;"></div>
 
@@ -847,7 +847,7 @@ function renderRefunds(){
     kpiP('good',nRef,T,'Not refunded')+
     kpiP('good',got(ref),ref.length,'Refunds recovered from the seller','Share of refunded lines');
   const other=S.filter(l=>l.sellerRefunded && !l.refundDone);
-  const otherOut=other.filter(l=>l.outcome!=='terminated_norefund').length;
+  const otherOut=other.filter(l=>!(l.outcome==='terminated_norefund' && l.ms[1]!=null)).length;
   $('#refundNote').textContent=other.length?`${fmt(other.length)} lines have a seller refund but no customer refund recorded: ${fmt(other.length-otherOut)} of them are counted in Pending refunds below${otherOut?`; ${fmt(otherOut)} are not counted there because their lead status is neither on your list nor a cancelled / returned status (worth a look)`:''}.`:'';
   const gm=new Map();
   for(const l of ref){ const s=l.status||'(blank)'; let g=gm.get(s); if(!g){ g={s,n:0,full:0,part:0,got:0}; gm.set(s,g); } g.n++; if(l.refund==='Full') g.full++; else g.part++; if(l.sellerRefunded) g.got++; }
@@ -1051,7 +1051,10 @@ let PENDING_ROWS=[];
 const ageOf=l=>l.ms[0]!=null?ASOF-l.ms[0]:null;
 function renderPending(){
   const S=SUB, T=S.length;
-  const pend=S.filter(l=>l.outcome==='terminated_norefund');
+  /* Excludes never-purchased lines — those are counted under "Never purchased — cancelled / refunded"
+     in Purchase delays above, matching the CSV download's one-header-per-line rule. Without this a
+     never-purchased pending-refund line was counted in both places, inflating this tile. */
+  const pend=S.filter(l=>l.outcome==='terminated_norefund' && l.ms[1]!=null);
   const onList=pend.filter(l=>l.pendAction).length, other=pend.length-onList;
   const withDel=pend.filter(l=>l.delivered!=null).length;
   const ages=pend.map(ageOf).filter(a=>a!=null);
