@@ -848,7 +848,7 @@ function renderRefunds(){
     kpiP('good',got(ref),ref.length,'Refunds recovered from the seller','Share of refunded lines');
   const other=S.filter(l=>l.sellerRefunded && !l.refundDone);
   const otherOut=other.filter(l=>!(l.outcome==='terminated_norefund' && l.ms[1]!=null)).length;
-  $('#refundNote').textContent=other.length?`${fmt(other.length)} lines have a seller refund but no customer refund recorded: ${fmt(other.length-otherOut)} of them are counted in Pending refunds below${otherOut?`; ${fmt(otherOut)} are not counted there because their lead status is neither on your list nor a cancelled / returned status (worth a look)`:''}.`:'';
+  $('#refundNote').textContent=other.length?`${fmt(other.length)} lines have a seller refund but no customer refund recorded: ${fmt(other.length-otherOut)} of them are counted in Pending refunds below${otherOut?`; ${fmt(otherOut)} are not counted there — either they were never purchased (counted under "Never purchased — cancelled / refunded" instead) or their lead status isn't on your pending-refund list (worth a look)`:''}.`:'';
   const gm=new Map();
   for(const l of ref){ const s=l.status||'(blank)'; let g=gm.get(s); if(!g){ g={s,n:0,full:0,part:0,got:0}; gm.set(s,g); } g.n++; if(l.refund==='Full') g.full++; else g.part++; if(l.sellerRefunded) g.got++; }
   CARDS.refund=[...gm.values()].map(g=>({title:g.s,count:g.n,share:ref.length,sortN:g.n,metric:g.got/g.n,
