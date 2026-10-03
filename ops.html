@@ -366,7 +366,7 @@
       <section id="download">
         <div class="panel">
           <h2 class="cardtitle">Download full report</h2>
-          <p class="desc">Every row exactly as you uploaded it — all original columns, in the original order — with two columns added at the end. Once the Amazon report is loaded, three more follow: <b>Amazon Remarks</b> (the refund check — Refund done on Amazon, not updated in Zoho / Refund updated in Zoho, not done on Amazon / Refund done on both / No refund on either / Data not found), then <b>Type</b> and <b>Transaction Status</b> looked up from the Amazon file by order ID. An order can have several transactions (for example Order and Refund); each distinct Type and its Transaction Status are listed in the same order, separated by " | ". <b>Remarks 1</b> gives every single row the dashboard header it belongs to: Never purchased — cancelled / refunded, Refunded, Refunded product not received back, Pending refunds, DG products — EDD brief, Pending to deliver, Delivered, or Duplicate lead. <b>Remarks 2</b> gives the sub-grouping shown under that header: Shipped / Not shipped (Pending to deliver), the EDD position (DG products), Delivered on time / with delay, No reverse pickup update, or the Zoho lead status for the refund and never-purchased headers. A line gets exactly one header, checked in that order. This always covers the whole uploaded file, not just what the filters above are currently showing.</p>
+          <p class="desc">Every row exactly as you uploaded it — all original columns, in the original order — with two columns added at the end. Once the Amazon report is loaded, three more follow: <b>Amazon Remarks</b> (the refund check — Refund done on Amazon, not updated in Zoho / Refund updated in Zoho, not done on Amazon / Refund done on both / No refund on either / Data not found), then <b>Type</b> and <b>Transaction Status</b> looked up from the Amazon file by order ID. An order can have several transactions (for example Order and Refund); one is shown — the Refund if there is one (the most recent if there are several), otherwise the A-to-z claim, otherwise the Order — so both cells always hold a single value. <b>Remarks 1</b> gives every single row the dashboard header it belongs to: Never purchased — cancelled / refunded, Refunded, Refunded product not received back, Pending refunds, DG products — EDD brief, Pending to deliver, Delivered, or Duplicate lead. <b>Remarks 2</b> gives the sub-grouping shown under that header: Shipped / Not shipped (Pending to deliver), the EDD position (DG products), Delivered on time / with delay, No reverse pickup update, or the Zoho lead status for the refund and never-purchased headers. A line gets exactly one header, checked in that order. This always covers the whole uploaded file, not just what the filters above are currently showing.</p>
           <div class="kpis" id="kpiDownload"></div>
           <button class="btn primary" id="downloadReportBtn" type="button">Download CSV with Remarks</button>
         </div>
@@ -794,10 +794,11 @@ function addAmazonRows(rows,map,meta,name){
     const t=normKey(r[iT]);
     let a=map.get(id); if(!a){ a={refund:false,atoz:false}; map.set(id,a); }
     if(t==='refund') a.refund=true; else if(t==='a-to-z guarantee claim') a.atoz=true;
-    /* every distinct Type + Transaction Status pair seen for this order, in file order */
-    const ty=String(r[iT]==null?'':r[iT]).trim(), st=iS>=0?String(r[iS]==null?'':r[iS]).trim():'', key=ty+'\u0001'+st;
-    if(!a.seen){ a.seen=new Set(); a.tx=[]; }
-    if(!a.seen.has(key)){ a.seen.add(key); a.tx.push([ty,st]); }
+    /* the one transaction shown for this order: Refund first, then A-to-z claim, then Order, then anything else; latest date wins a tie */
+    const ty=String(r[iT]==null?'':r[iT]).trim(), st=iS>=0?String(r[iS]==null?'':r[iS]).trim():'';
+    const rank=t==='refund'?4:t==='a-to-z guarantee claim'?3:t==='order'?2:1;
+    let tm=-Infinity; if(iD>=0 && r[iD]!=null){ const x=Date.parse(String(r[iD]).replace(/\s*UTC$/i,'')+' UTC'); if(!isNaN(x)) tm=x; }
+    if(!a.best || rank>a.best.rank || (rank===a.best.rank && tm>=a.best.tm)) a.best={ty,st,rank,tm};
   }
 }
 async function loadAmazon(files){
@@ -834,7 +835,7 @@ function amzClassify(){
       const a=l.orderId?AMZ.get(l.orderId.trim()):null;
       if(!a){ c='nf'; t='Data not found'; }
       else{
-        ty=a.tx.map(x=>x[0]).join(' | '); st=a.tx.map(x=>x[1]).join(' | ');
+        ty=a.best?a.best.ty:''; st=a.best?a.best.st:'';
         const onAmz=a.refund||a.atoz, tag=a.refund?'':' (A-to-z claim)', g=agg.get(l.orderId);
         if(onAmz&&l.refundDone){ c='both'; t='Refund done on both — matched'; }
         else if(onAmz){
