@@ -95,6 +95,14 @@
   .drop:hover,.drop.over{border-color:var(--accent);}
   .drop strong{font-family:'Space Grotesk'; font-size:1.05rem;}
   .drop{position:relative;} .drop input{position:absolute; opacity:0; width:1px; height:1px;} .drop:focus-within{border-color:var(--accent);}
+  .step{border:1px solid var(--line); border-radius:12px; padding:16px 18px; background:var(--panel); margin-bottom:14px;}
+  .step .drop{padding:22px 20px;}
+  .stephead{display:flex; align-items:center; gap:10px; font-family:'Space Grotesk'; font-weight:600; font-size:1.02rem; margin-bottom:12px;}
+  .stepno{width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff; display:grid; place-items:center; font-size:.82rem; flex:none;}
+  .step.done .stepno{background:var(--good);}
+  .picked{margin-top:10px; font-size:.88rem; font-weight:600; color:var(--good);}
+  .filelist{list-style:none; margin:0; padding:0; font-size:.9rem;} .filelist li{padding:5px 0;} .filelist .m{color:var(--muted);}
+  button.linkbtn{background:none; border:0; padding:0; font:inherit; color:var(--accent); text-decoration:underline; cursor:pointer;}
   #status{margin-top:12px; font-size:.88rem; color:var(--muted);} #status.err{color:var(--bad);} #status.ok{color:var(--good);}
 
   /* filters */
@@ -208,18 +216,37 @@
     </div>
 
     <section id="load" style="margin-bottom:30px;">
-      <label class="drop" id="drop">
-        <input type="file" id="file" accept=".xlsx,.xls,.csv">
-        <strong>Choose the Zoho report</strong> (.xlsx or .csv) or drop it here
-        <div class="note" style="margin-top:6px;">A 30 MB xlsx can take 20–40 seconds to read. Nothing leaves your device.</div>
-      </label>
-      <div id="status"></div>
+      <div class="step" id="step1">
+        <div class="stephead"><span class="stepno">1</span>Upload the Zoho report</div>
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept=".xlsx,.xls,.csv">
+          <strong>Choose the Zoho report</strong> (.xlsx or .csv) or drop it here
+          <div class="note" style="margin-top:6px;">A 30 MB xlsx can take 20–40 seconds to read. Nothing leaves your device.</div>
+        </label>
+        <div class="picked" id="pick1" hidden></div>
+      </div>
 
-      <label class="drop" id="dropAmz" style="margin-top:14px;">
-        <input type="file" id="fileAmz" accept=".xlsx,.xls,.csv" multiple>
-        <strong>Choose the Amazon Report Repository report</strong> (.xlsx or .csv, optional) or drop it here
-        <div class="note" style="margin-top:6px;">The Amazon transaction report. It is matched to Zoho by Amazon order ID and adds a <b>Remarks 3</b> column to the download. You can select several files at once.</div>
-      </label>
+      <div class="step" id="step2" hidden>
+        <div class="stephead"><span class="stepno">2</span>Now upload the Amazon Report Repository report</div>
+        <label class="drop" id="dropAmz">
+          <input type="file" id="fileAmz" accept=".xlsx,.xls,.csv" multiple>
+          <strong>Choose the Amazon Report Repository report</strong> (.xlsx or .csv) or drop it here
+          <div class="note" style="margin-top:6px;">The Amazon transaction report. It is matched to Zoho by Amazon order ID and adds a <b>Remarks 3</b> column to the download. You can select several files at once.</div>
+        </label>
+        <div class="picked" id="pick2" hidden></div>
+        <div class="note" style="margin-top:10px;">No Amazon report today? <button type="button" class="linkbtn" id="skipAmz">Continue without it</button></div>
+      </div>
+
+      <div class="step" id="step3" hidden>
+        <div class="stephead"><span class="stepno">3</span><span id="readyTitle">Ready to start</span></div>
+        <ul class="filelist" id="fileList"></ul>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px;">
+          <button class="btn primary" id="startBtn" type="button">Start</button>
+          <button class="btn" id="resetFilesBtn" type="button">Change files</button>
+        </div>
+      </div>
+
+      <div id="status"></div>
       <div id="statusAmz"></div>
     </section>
 
@@ -710,12 +737,47 @@ async function loadFile(file){
     if(unread.length) setStatus(`Loaded ${file.name}. ${recon} WARNING — some date cells could not be read: ${unread.map(([k,v])=>k.slice(1)+' ('+fmt(v)+')').join(', ')}. Numbers depending on those dates may be understated.`,'err');
     else setStatus(`Loaded ${file.name}. ${recon} All date cells were read.`,'ok');
     recompute();
-  }catch(err){ console.error(err); setStatus('Could not read the file: '+err.message,'err'); }
+    return true;
+  }catch(err){ console.error(err); setStatus('Could not read the file: '+err.message,'err'); return false; }
 }
-$('#file').addEventListener('change',e=>{ const f=e.target.files[0]; if(f) loadFile(f); });
+/* ---------- guided upload: 1 Zoho file -> 2 Amazon file -> 3 both shown, press Start ---------- */
+const PEND={zoho:null, amz:[], skipAmz:false, busy:false};
+const sizeMB=f=>(f.size/1048576).toFixed(1)+' MB';
+function refreshSteps(){
+  const z=PEND.zoho, a=PEND.amz, ready=!!z && (a.length>0||PEND.skipAmz);
+  $('#step1').classList.toggle('done',!!z);
+  $('#pick1').hidden=!z; if(z) $('#pick1').textContent='✓ '+z.name+' ('+sizeMB(z)+')';
+  $('#step2').hidden=!z; $('#step2').classList.toggle('done',a.length>0||PEND.skipAmz);
+  $('#pick2').hidden=!a.length; if(a.length) $('#pick2').textContent='✓ '+a.map(f=>f.name+' ('+sizeMB(f)+')').join(', ');
+  $('#step3').hidden=!ready;
+  if(ready){
+    $('#readyTitle').textContent=a.length?'Both files uploaded — press Start':'Zoho report uploaded — press Start';
+    $('#fileList').innerHTML=`<li>✓ <b>Zoho report</b> — ${esc(z.name)} <span class="m">(${sizeMB(z)})</span></li>`+
+      (a.length?a.map(f=>`<li>✓ <b>Amazon Report Repository</b> — ${esc(f.name)} <span class="m">(${sizeMB(f)})</span></li>`).join('')
+               :`<li><span class="m">Amazon Report Repository — not included (no Remarks 3)</span></li>`);
+  }
+  $('#startBtn').disabled=PEND.busy||!ready;
+  $('#startBtn').textContent=PEND.busy?'Processing…':(LINES.length?'Start again':'Start');
+}
+function stageZoho(f){ if(!f) return; PEND.zoho=f; refreshSteps(); }
+function stageAmz(files){ const ok=files.filter(Boolean); if(!ok.length) return; PEND.amz=ok; PEND.skipAmz=false; refreshSteps(); }
+$('#file').addEventListener('change',e=>{ stageZoho(e.target.files[0]); e.target.value=''; });
 ['dragover','dragenter'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault(); $('#drop').classList.add('over');}));
 ['dragleave','drop'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault(); $('#drop').classList.remove('over');}));
-$('#drop').addEventListener('drop',e=>{ const f=e.dataTransfer&&e.dataTransfer.files[0]; if(f) loadFile(f); });
+$('#drop').addEventListener('drop',e=>{ stageZoho(e.dataTransfer&&e.dataTransfer.files[0]); });
+$('#skipAmz').addEventListener('click',()=>{ PEND.amz=[]; PEND.skipAmz=true; refreshSteps(); });
+$('#resetFilesBtn').addEventListener('click',()=>{ if(PEND.busy) return; PEND.zoho=null; PEND.amz=[]; PEND.skipAmz=false; refreshSteps(); });
+$('#startBtn').addEventListener('click',async()=>{
+  if(PEND.busy||!PEND.zoho) return;
+  PEND.busy=true; refreshSteps(); setStatusAmz('');
+  try{
+    const ok=await loadFile(PEND.zoho);
+    if(ok){
+      if(PEND.amz.length) await loadAmazon(PEND.amz);
+      else{ AMZ=null; AMZ_META=null; renderAmz(); renderDownload(); }
+    }
+  } finally { PEND.busy=false; refreshSteps(); }
+});
 
 /* ---------- Amazon Report Repository (refund check) ---------- */
 let AMZ=null, AMZ_META=null, AMZ_REM=new Map();   /* AMZ: order id -> {refund, atoz}; AMZ_REM: Zoho row index -> {cat,text} */
@@ -747,12 +809,13 @@ async function loadAmazon(files){
     meta.orders=map.size; meta.refunded=ref;
     setStatusAmz(`Loaded ${meta.names.join(', ')}: ${fmt(meta.rows)} transactions, ${fmt(map.size)} Amazon orders, ${fmt(ref)} of them refunded.`+(LINES.length?'':' Now load the Zoho report to run the check.'),'ok');
     if(LINES.length){ renderAmz(); renderDownload(); }
-  }catch(err){ console.error(err); setStatusAmz('Could not read the Amazon file: '+err.message,'err'); }
+    return true;
+  }catch(err){ console.error(err); setStatusAmz('Could not read the Amazon file: '+err.message,'err'); return false; }
 }
-$('#fileAmz').addEventListener('change',e=>{ const f=[...e.target.files]; if(f.length) loadAmazon(f); e.target.value=''; });
+$('#fileAmz').addEventListener('change',e=>{ stageAmz([...e.target.files]); e.target.value=''; });
 ['dragover','dragenter'].forEach(ev=>$('#dropAmz').addEventListener(ev,e=>{e.preventDefault(); $('#dropAmz').classList.add('over');}));
 ['dragleave','drop'].forEach(ev=>$('#dropAmz').addEventListener(ev,e=>{e.preventDefault(); $('#dropAmz').classList.remove('over');}));
-$('#dropAmz').addEventListener('drop',e=>{ const f=e.dataTransfer?[...e.dataTransfer.files]:[]; if(f.length) loadAmazon(f); });
+$('#dropAmz').addEventListener('drop',e=>{ stageAmz(e.dataTransfer?[...e.dataTransfer.files]:[]); });
 
 /* Remarks 3 for every Zoho line. Matching is on Amazon order ID. For a multi-line order Amazon records refunds per item but Zoho has one
    Refund value per line, so a line with no Zoho refund whose sibling lines ARE refunded in Zoho is flagged to verify instead of "not updated". */
