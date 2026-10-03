@@ -188,6 +188,7 @@
       <a href="#dg"><span class="dot"></span>DG products</a>
       <a href="#shipments"><span class="dot"></span>Shipments</a>
       <a href="#pd"><span class="dot"></span>Pending to deliver</a>
+      <a href="#amzcheck"><span class="dot"></span>Amazon refund check</a>
       <a href="#download"><span class="dot"></span>Download full report</a>
     </nav>
     <div class="themeToggle">
@@ -213,6 +214,13 @@
         <div class="note" style="margin-top:6px;">A 30 MB xlsx can take 20–40 seconds to read. Nothing leaves your device.</div>
       </label>
       <div id="status"></div>
+
+      <label class="drop" id="dropAmz" style="margin-top:14px;">
+        <input type="file" id="fileAmz" accept=".xlsx,.xls,.csv" multiple>
+        <strong>Choose the Amazon Report Repository report</strong> (.xlsx or .csv, optional) or drop it here
+        <div class="note" style="margin-top:6px;">The Amazon transaction report. It is matched to Zoho by Amazon order ID and adds a <b>Remarks 3</b> column to the download. You can select several files at once.</div>
+      </label>
+      <div id="statusAmz"></div>
     </section>
 
     <div id="app" hidden>
@@ -318,10 +326,20 @@
         </div>
       </section>
 
+      <section id="amzcheck">
+        <div class="panel">
+          <h2 class="cardtitle">Amazon refund check</h2>
+          <p class="desc">Compares each Zoho order line with the Amazon Report Repository report, matched on <b>Amazon order ID</b> (Zoho "Alternate Order No." = Amazon "order id"). On Amazon an order counts as <b>refunded</b> when the report has a <b>Refund</b> or <b>A-to-z Guarantee Claim</b> transaction for it; in Zoho a line counts as refunded when its <b>Refund</b> column says Full or Partial. <b>Data not found</b> means the order ID is not in the Amazon report you uploaded (for example, an order outside the report's date range).</p>
+          <div id="amzEmpty" class="empty">Upload the Amazon Report Repository report above to see the comparison.</div>
+          <div class="kpis" id="kpiAmz"></div>
+          <div class="note" id="amzNote" style="margin-top:12px;"></div>
+        </div>
+      </section>
+
       <section id="download">
         <div class="panel">
           <h2 class="cardtitle">Download full report</h2>
-          <p class="desc">Every row exactly as you uploaded it — all original columns, in the original order — with two columns added at the end. <b>Remarks 1</b> gives every single row the dashboard header it belongs to: Never purchased — cancelled / refunded, Refunded, Refunded product not received back, Pending refunds, DG products — EDD brief, Pending to deliver, Delivered, or Duplicate lead. <b>Remarks 2</b> gives the sub-grouping shown under that header: Shipped / Not shipped (Pending to deliver), the EDD position (DG products), Delivered on time / with delay, No reverse pickup update, or the Zoho lead status for the refund and never-purchased headers. A line gets exactly one header, checked in that order. This always covers the whole uploaded file, not just what the filters above are currently showing.</p>
+          <p class="desc">Every row exactly as you uploaded it — all original columns, in the original order — with two columns added at the end (three once the Amazon report is loaded: <b>Remarks 3</b> = the Amazon refund check — Refund done on Amazon, not updated in Zoho / Refund updated in Zoho, not done on Amazon / Refund done on both / No refund on either / Data not found). <b>Remarks 1</b> gives every single row the dashboard header it belongs to: Never purchased — cancelled / refunded, Refunded, Refunded product not received back, Pending refunds, DG products — EDD brief, Pending to deliver, Delivered, or Duplicate lead. <b>Remarks 2</b> gives the sub-grouping shown under that header: Shipped / Not shipped (Pending to deliver), the EDD position (DG products), Delivered on time / with delay, No reverse pickup update, or the Zoho lead status for the refund and never-purchased headers. A line gets exactly one header, checked in that order. This always covers the whole uploaded file, not just what the filters above are currently showing.</p>
           <div class="kpis" id="kpiDownload"></div>
           <button class="btn primary" id="downloadReportBtn" type="button">Download CSV with Remarks</button>
         </div>
@@ -656,18 +674,20 @@ const CHARTS={};
 function setStatus(t,cls){ const s=$('#status'); s.textContent=t; s.className=cls||''; }
 
 /* ---------- loading ---------- */
-async function parseXLSX(file){
+/* amazon=true: reading the Amazon report, so leave the Zoho date system (SERIAL_EPOCH) and the Zoho status line alone */
+async function parseXLSX(file, amazon){
   const buf=await file.arrayBuffer(); await tick();
-  setStatus('Parsing spreadsheet — a 30 MB file can take 20–40 seconds…'); await tick();
+  if(!amazon){ setStatus('Parsing spreadsheet — a 30 MB file can take 20–40 seconds…'); await tick(); }
+  const setEpoch=wb=>{ if(!amazon) SERIAL_EPOCH=(wb.Workbook&&wb.Workbook.WBProps&&wb.Workbook.WBProps.date1904)?25569-1462:25569; };
   let rows=null;
   try{
     const wb=XLSX.read(buf,{type:'array',dense:true,cellFormula:false,cellHTML:false,cellStyles:false,cellNF:false});
-    SERIAL_EPOCH=(wb.Workbook&&wb.Workbook.WBProps&&wb.Workbook.WBProps.date1904)?25569-1462:25569;
+    setEpoch(wb);
     rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null,blankrows:false});
   }catch(e){ rows=null; }
   if(!rows || rows.length<2){
     const wb=XLSX.read(buf,{type:'array'});
-    SERIAL_EPOCH=(wb.Workbook&&wb.Workbook.WBProps&&wb.Workbook.WBProps.date1904)?25569-1462:25569;
+    setEpoch(wb);
     rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null,blankrows:false});
   }
   return rows;
@@ -697,6 +717,91 @@ $('#file').addEventListener('change',e=>{ const f=e.target.files[0]; if(f) loadF
 ['dragleave','drop'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault(); $('#drop').classList.remove('over');}));
 $('#drop').addEventListener('drop',e=>{ const f=e.dataTransfer&&e.dataTransfer.files[0]; if(f) loadFile(f); });
 
+/* ---------- Amazon Report Repository (refund check) ---------- */
+let AMZ=null, AMZ_META=null, AMZ_REM=new Map();   /* AMZ: order id -> {refund, atoz}; AMZ_REM: Zoho row index -> {cat,text} */
+function setStatusAmz(t,cls){ const s=$('#statusAmz'); s.textContent=t; s.className=cls||''; }
+function addAmazonRows(rows,map,meta,name){
+  if(!rows || rows.length<2) throw new Error(name+' has no data rows.');
+  const H=rows[0].map(normKey), iO=H.indexOf('order id'), iT=H.indexOf('type'), iD=H.indexOf('date/time');
+  if(iO<0||iT<0) throw new Error(name+': these required Amazon columns were not found: '+[iO<0?'order id':'',iT<0?'type':''].filter(Boolean).join(', ')+'. Is this the Report Repository transaction report?');
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i]; if(!r) continue;
+    meta.rows++;
+    if(iD>=0 && r[iD]!=null){ const t=Date.parse(String(r[iD]).replace(/\s*UTC$/i,'')+' UTC'); if(!isNaN(t)){ if(meta.min==null||t<meta.min) meta.min=t; if(meta.max==null||t>meta.max) meta.max=t; } }
+    const id=String(r[iO]==null?'':r[iO]).trim(); if(!id) continue;
+    const t=normKey(r[iT]);
+    let a=map.get(id); if(!a){ a={refund:false,atoz:false}; map.set(id,a); }
+    if(t==='refund') a.refund=true; else if(t==='a-to-z guarantee claim') a.atoz=true;
+  }
+}
+async function loadAmazon(files){
+  const map=new Map(), meta={rows:0,min:null,max:null,names:[]};
+  try{
+    for(const f of files){
+      setStatusAmz('Reading '+f.name+' ('+(f.size/1048576).toFixed(1)+' MB) — a large file can take 20–40 seconds…'); await tick();
+      const rows=/\.csv$/i.test(f.name) ? await parseCSV(f) : await parseXLSX(f,true);
+      addAmazonRows(rows,map,meta,f.name); meta.names.push(f.name);
+    }
+    AMZ=map; AMZ_META=meta;
+    let ref=0; for(const a of map.values()) if(a.refund||a.atoz) ref++;
+    meta.orders=map.size; meta.refunded=ref;
+    setStatusAmz(`Loaded ${meta.names.join(', ')}: ${fmt(meta.rows)} transactions, ${fmt(map.size)} Amazon orders, ${fmt(ref)} of them refunded.`+(LINES.length?'':' Now load the Zoho report to run the check.'),'ok');
+    if(LINES.length){ renderAmz(); renderDownload(); }
+  }catch(err){ console.error(err); setStatusAmz('Could not read the Amazon file: '+err.message,'err'); }
+}
+$('#fileAmz').addEventListener('change',e=>{ const f=[...e.target.files]; if(f.length) loadAmazon(f); e.target.value=''; });
+['dragover','dragenter'].forEach(ev=>$('#dropAmz').addEventListener(ev,e=>{e.preventDefault(); $('#dropAmz').classList.add('over');}));
+['dragleave','drop'].forEach(ev=>$('#dropAmz').addEventListener(ev,e=>{e.preventDefault(); $('#dropAmz').classList.remove('over');}));
+$('#dropAmz').addEventListener('drop',e=>{ const f=e.dataTransfer?[...e.dataTransfer.files]:[]; if(f.length) loadAmazon(f); });
+
+/* Remarks 3 for every Zoho line. Matching is on Amazon order ID. For a multi-line order Amazon records refunds per item but Zoho has one
+   Refund value per line, so a line with no Zoho refund whose sibling lines ARE refunded in Zoho is flagged to verify instead of "not updated". */
+function amzClassify(){
+  AMZ_REM=new Map(); if(!AMZ) return;
+  const agg=new Map();
+  for(const l of LINES){ if(l.outcome==='dup'||!l.orderId) continue; let a=agg.get(l.orderId); if(!a){ a={n:0,zr:0}; agg.set(l.orderId,a); } a.n++; if(l.refundDone) a.zr++; }
+  for(const l of LINES){
+    let c, t;
+    if(l.outcome==='dup'){ c='dup'; t='Duplicate lead — not checked'; }
+    else{
+      const a=l.orderId?AMZ.get(l.orderId.trim()):null;
+      if(!a){ c='nf'; t='Data not found'; }
+      else{
+        const onAmz=a.refund||a.atoz, tag=a.refund?'':' (A-to-z claim)', g=agg.get(l.orderId);
+        if(onAmz&&l.refundDone){ c='both'; t='Refund done on both — matched'; }
+        else if(onAmz){
+          if(g&&g.n>1&&g.zr>0){ c='multi'; t='Multi-line order: refunded on Amazon and in Zoho for other line(s) — verify this line'; }
+          else{ c='amz'; t='Refund done on Amazon'+tag+', not updated in Zoho'; }
+        }
+        else if(l.refundDone){ c='zoho'; t='Refund updated in Zoho, not done on Amazon'; }
+        else{ c='none'; t='No refund on Amazon or Zoho'; }
+      }
+    }
+    AMZ_REM.set(l.i,{cat:c,text:t});
+  }
+}
+function renderAmz(){
+  amzClassify();
+  const has=!!AMZ;
+  $('#amzEmpty').hidden=has; $('#kpiAmz').hidden=!has;
+  if(!has){ $('#kpiAmz').innerHTML=''; $('#amzNote').textContent=''; return; }
+  const n={amz:0,zoho:0,both:0,none:0,nf:0,multi:0};
+  for(const l of SUB){ const r=AMZ_REM.get(l.i); if(r&&n[r.cat]!=null) n[r.cat]++; }
+  const T=SUB.length;
+  $('#kpiAmz').innerHTML=
+    kpi('',fmt(T),'Order lines checked','Duplicate leads left out')+
+    kpiP('bad',n.amz,T,'Refund done on Amazon, not updated in Zoho','Update the Refund column in Zoho')+
+    kpiP('warn',n.zoho,T,'Refund updated in Zoho, not done on Amazon','Customer refunded in Zoho, no refund on Amazon')+
+    kpiP('good',n.both,T,'Refund done on both','Matched')+
+    kpiP('',n.none,T,'No refund on Amazon or Zoho')+
+    kpiP('warn',n.nf,T,'Data not found','Order ID not in the Amazon report')+
+    (n.multi?kpiP('warn',n.multi,T,'Multi-line order — verify this line','Other line(s) of the order are refunded'):'');
+  const m=AMZ_META, d=t=>t==null?'':new Date(t).toISOString().slice(0,10);
+  $('#amzNote').textContent=`Amazon report: ${m.names.join(', ')} — ${fmt(m.rows)} transactions covering ${d(m.min)} to ${d(m.max)}. "Data not found" lines are usually orders placed before the report's first date or in another seller account.`+
+    (n.multi?` "Multi-line order" lines: Amazon records refunds per item but Zoho has one Refund value per line, so where another line of the same order is refunded in both, this line is left for you to verify.`:'')+
+    ` The download below always covers the whole Zoho file, not just the current filters.`;
+}
+
 /* ---------- filters ---------- */
 function initFilters(){
   const srcs=[...new Set(LINES.filter(l=>l.outcome!=='dup').map(l=>l.source))].sort();
@@ -720,12 +825,12 @@ function recompute(){
   $('#fSummary').textContent=(bits.length?`Showing ${fmt(SUB.length)} of ${fmt(LINES.length-DQ.dupes)} order lines — ${bits.join(', ')}. `:`Showing all ${fmt(SUB.length)} order lines. `)+`As-of ${fmtD(ASOF)}.`;
   renderAll();
 }
-function renderAll(){ themeChart(); renderPurchase(); renderRefunds(); renderNotReturned(); renderPending(); renderDg(); renderShipments(); renderPd(); renderDownload(); }
+function renderAll(){ themeChart(); renderPurchase(); renderRefunds(); renderNotReturned(); renderPending(); renderDg(); renderShipments(); renderPd(); renderAmz(); renderDownload(); }
 function renderDownload(){
-  const cols = RAW_ROWS[0] ? RAW_ROWS[0].length : 0;
+  const cols = RAW_ROWS[0] ? RAW_ROWS[0].length : 0, extra = AMZ ? 3 : 2;
   $('#kpiDownload').innerHTML=
     kpi('',fmt(DQ.fileRows),'Rows in your uploaded file','Every row gets a Remarks 1')+
-    kpi('',fmt(cols+2),'Columns in the download','Your '+fmt(cols)+' original columns + Remarks 1 + Remarks 2');
+    kpi('',fmt(cols+extra),'Columns in the download','Your '+fmt(cols)+' original columns + Remarks 1 + Remarks 2'+(AMZ?' + Remarks 3 (Amazon refund check)':' — load the Amazon report to add Remarks 3'));
 }
 $('#downloadReportBtn').addEventListener('click',()=>saveCSV('zoho-report-with-remarks-'+fmtD(ASOF)+'.csv',fullReportCSV()));
 
@@ -982,12 +1087,14 @@ function classifySub(l, header){
 function fullReportCSV(){
   const headerOf=new Map(), subOf=new Map();
   for(const l of LINES){ const h=classifyHeader(l); headerOf.set(l.i,h); subOf.set(l.i,classifySub(l,h)); }
-  const header=[...RAW_ROWS[0],'Remarks 1','Remarks 2'];
+  const withAmz=!!AMZ; if(withAmz) amzClassify();
+  const header=[...RAW_ROWS[0],'Remarks 1','Remarks 2',...(withAmz?['Remarks 3']:[])];
   const out=[header.map(csvCell).join(',')];
   for(let i=1;i<RAW_ROWS.length;i++){
     const r=RAW_ROWS[i]||[];
     const h=headerOf.has(i)?headerOf.get(i):'', s=subOf.has(i)?subOf.get(i):'';
-    out.push([...r,h,s].map(csvCell).join(','));
+    const a=withAmz?[AMZ_REM.has(i)?AMZ_REM.get(i).text:'']:[];
+    out.push([...r,h,s,...a].map(csvCell).join(','));
   }
   return '\uFEFF'+out.join('\r\n');
 }
