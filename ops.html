@@ -457,7 +457,10 @@ const PENDING_REFUND_RULES = (()=>{
 
 function dayOf(y,m,d){ return Math.floor(Date.UTC(y,m,d)/MS_DAY); }
 /* Parse any date-ish cell to an integer "days since 1970-01-01" (or null). Placeholder years (1999, 2277...) -> null */
+/* PD_WHY after a call: '' = the cell was empty, 'ph' = a placeholder year (Zoho's "no date"), 'bad' = something is written there but it isn't a date we can read */
+let PD_WHY='';
 function pd(v, dq, key){
+  PD_WHY='';
   if(v==null || v==='') return null;
   let day=null;
   if(typeof v==='number'){ if(!isFinite(v)) return null; day = Math.floor(v) - SERIAL_EPOCH; }
@@ -467,10 +470,15 @@ function pd(v, dq, key){
     if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})/))) day=dayOf(+m[1],+m[2]-1,+m[3]);
     else if((m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/))) day=dayOf(+m[3],+m[2]-1,+m[1]);
     else if(/^\d+(\.\d+)?$/.test(s)) day=Math.floor(parseFloat(s))-SERIAL_EPOCH;
-    else { if(dq && s!=='') dq['?'+key]=(dq['?'+key]||0)+1; return null; }
+    else{
+      /* other written forms, e.g. 05-Jun-2026, Jun 5, 2026 10:22 AM */
+      const t=(/[A-Za-z]{3}/.test(s)&&/\d{4}/.test(s))?Date.parse(s):NaN;
+      if(!isNaN(t)){ const d=new Date(t); day=dayOf(d.getFullYear(),d.getMonth(),d.getDate()); }
+      else{ if(dq && s!=='') dq['?'+key]=(dq['?'+key]||0)+1; if(s!=='') PD_WHY='bad'; return null; }
+    }
   }
   if(day==null || isNaN(day)) return null;
-  if(day<MIN_VALID_DAY || day>MAX_VALID_DAY){ if(dq) dq[key]=(dq[key]||0)+1; return null; }
+  if(day<MIN_VALID_DAY || day>MAX_VALID_DAY){ PD_WHY='ph'; if(dq) dq[key]=(dq[key]||0)+1; return null; }
   return day;
 }
 const fmtD = d => d==null ? '' : new Date(d*MS_DAY).toISOString().slice(0,10);
@@ -538,7 +546,8 @@ function buildLines(rows){
     const r=rows[i]; if(!r || !r.length) continue;
     const orderId=str(r,'orderId'), lineNo=str(r,'lineNo'); if(!orderId && !lineNo) continue;
     const dget=k=> idx[k]<0 ? null : pd(r[idx[k]], dq.placeholder, k);
-    const created=dget('created'), purchased=dget('purchased'), usShip=dget('usShip'), arrived=dget('arrived'),
+    const purchased=dget('purchased'), purchWhy=PD_WHY;   /* a purchase date is present if it reads as a date, or something unreadable is written in the cell */
+    const created=dget('created'), usShip=dget('usShip'), arrived=dget('arrived'),
           intlShip=dget('intlShip'), bag=dget('bag'), localShip=dget('localShip'), delivered=dget('delivered'), edd=dget('edd');
     const ms=[created,purchased,usShip,arrived,intlShip,bag,localShip];
     const status=str(r,'status');
@@ -581,7 +590,7 @@ function buildLines(rows){
       name:(first+' '+last).trim(), mobile:mob, email:str(r,'email'), city:str(r,'city'), emirate:normEmirate(str(r,'state')),
       address:str(r,'address'), title:str(r,'title'), sku:str(r,'sku'), qty:str(r,'qty'),
       courier:normCourier(str(r,'courier')), tracking:str(r,'tracking'),
-      ms, edd, delivered, refund, refundAmt:parseFloat(str(r,'refundAmt'))||0, refundDate:dget('refundDate'),
+      ms, hasPurchase:(purchased!=null||purchWhy==='bad'), edd, delivered, refund, refundAmt:parseFloat(str(r,'refundAmt'))||0, refundDate:dget('refundDate'),
       sellerRefundDate, sellerRefundAmt, sellerRefunded:(sellerRefundDate!=null||sellerRefundAmt>0),
       pendAction, refundDone:!!refund, rtoRmaDate, reversePickup, nrbGroup,
       outcome, stage, ref, monthKey, badOrder:bad, linesInOrder:1,
@@ -931,10 +940,10 @@ function renderPurchase(){
   const S=SUB, T=S.length;
   const delay=l=>l.ms[1]-l.ms[0];
   /* "Purchased" = has a purchase date, full stop — matches a plain Excel filter on the Purchase Date column */
-  const purchased=S.filter(l=>l.ms[1]!=null);
+  const purchased=S.filter(l=>l.hasPurchase);
   const P=purchased.length;
   /* the day-count chart can only place lines with a valid, non-negative gap to Order Creation Date */
-  const chartPop=purchased.filter(l=>l.ms[0]!=null && delay(l)>=0);
+  const chartPop=purchased.filter(l=>l.ms[1]!=null && l.ms[0]!=null && delay(l)>=0);
   const unplaced=P-chartPop.length;
   const B=[
     {label:'Same day',  test:d=>d===0,            color:cssv('--good'),   css:'var(--good)'},
@@ -946,7 +955,7 @@ function renderPurchase(){
   ];
   const counts=B.map(b=>chartPop.filter(l=>b.test(delay(l))).length);
   const within1=counts[0]+counts[1], late=counts[2]+counts[3]+counts[4]+counts[5];
-  const notP=S.filter(l=>l.ms[1]==null);
+  const notP=S.filter(l=>!l.hasPurchase);   /* the Purchase Date cell is empty (or holds Zoho's placeholder year) */
   const cancelled=notP.filter(l=>l.outcome==='refunded_before'||l.outcome==='terminated_norefund'||l.outcome==='delivered_refunded');
   const waiting=notP.filter(l=>l.outcome==='active');
   const noDate=notP.filter(l=>l.outcome==='delivered');
@@ -965,7 +974,7 @@ function renderPurchase(){
   vbar('cPurchase',B.map(b=>b.label),counts,B.map(b=>b.color),P);
   $('#purchaseNote').textContent=
     `Median ${med} day(s) from order to purchase; 90% of purchases happen within ${p90} day(s).`+
-    (unplaced?` ${fmt(unplaced)} purchased line(s) have no Order Creation Date, or a purchase date before it, so they're counted in Purchased above but left out of the day-count chart.`:'')+
+    (unplaced?` ${fmt(unplaced)} purchased line(s) have no Order Creation Date, a purchase date before it, or a purchase date that could not be read, so they're counted in Purchased above but left out of the day-count chart.`:'')+
     (noDate.length?` ${fmt(noDate.length)} delivered lines have no purchase date recorded and are not in the chart.`:'');
 
   const npm=new Map();
@@ -1021,7 +1030,7 @@ function renderRefunds(){
     kpiP('good',nRef,T,'Not refunded')+
     kpiP('good',got(ref),ref.length,'Refunds recovered from the seller','Share of refunded lines');
   const other=S.filter(l=>l.sellerRefunded && !l.refundDone);
-  const otherOut=other.filter(l=>!(l.outcome==='terminated_norefund' && l.ms[1]!=null)).length;
+  const otherOut=other.filter(l=>!(l.outcome==='terminated_norefund' && l.hasPurchase)).length;
   $('#refundNote').textContent=other.length?`${fmt(other.length)} lines have a seller refund but no customer refund recorded: ${fmt(other.length-otherOut)} of them are counted in Pending refunds below${otherOut?`; ${fmt(otherOut)} are not counted there — either they were never purchased (counted under "Never purchased — cancelled / refunded" instead) or their lead status isn't on your pending-refund list (worth a look)`:''}.`:'';
   const gm=new Map();
   for(const l of ref){ const s=l.status||'(blank)'; let g=gm.get(s); if(!g){ g={s,n:0,full:0,part:0,got:0}; gm.set(s,g); } g.n++; if(l.refund==='Full') g.full++; else g.part++; if(l.sellerRefunded) g.got++; }
@@ -1132,7 +1141,7 @@ const eddBucket=l=>{ if(l.edd==null) return 'none'; const d=l.edd-ASOF; return d
 function classifyHeader(l){
   if(l.outcome==='dup') return 'Duplicate lead';
   const refunded = l.outcome==='delivered_refunded' || l.outcome==='refunded_before';
-  if(l.ms[1]==null && (refunded || l.outcome==='terminated_norefund')) return 'Never purchased — cancelled / refunded';
+  if(!l.hasPurchase && (refunded || l.outcome==='terminated_norefund')) return 'Never purchased — cancelled / refunded';
   if(refunded){
     const grp=(RE_DELIVERED_ANY.test(l.status)&&!RE_LOST.test(l.status)) || RE_RMA_AUTH.test(l.status) || RE_AMZ_PNR.test(l.status);
     const tracked=!!l.reversePickup || l.rtoRmaDate!=null;
@@ -1230,7 +1239,7 @@ function renderPending(){
   /* Excludes never-purchased lines — those are counted under "Never purchased — cancelled / refunded"
      in Purchase delays above, matching the CSV download's one-header-per-line rule. Without this a
      never-purchased pending-refund line was counted in both places, inflating this tile. */
-  const pend=S.filter(l=>l.outcome==='terminated_norefund' && l.ms[1]!=null);
+  const pend=S.filter(l=>l.outcome==='terminated_norefund' && l.hasPurchase);
   const onList=pend.filter(l=>l.pendAction).length, other=pend.length-onList;
   const withDel=pend.filter(l=>l.delivered!=null).length;
   const ages=pend.map(ageOf).filter(a=>a!=null);
