@@ -366,7 +366,7 @@
       <section id="download">
         <div class="panel">
           <h2 class="cardtitle">Download full report</h2>
-          <p class="desc">Every row exactly as you uploaded it — all original columns, in the original order — with two columns added at the end. Once the Amazon report is loaded, three more follow: <b>Amazon Remarks</b> (the refund check — Refund done on Amazon, not updated in Zoho / Refund updated in Zoho, not done on Amazon / Refund done on both / No refund on either / Data not found), then <b>Type</b> and <b>Transaction Status</b> looked up from the Amazon file by order ID. An order can have several transactions (for example Order and Refund); one is shown — the Refund if there is one (the most recent if there are several), otherwise the A-to-z claim, otherwise the Order — so both cells always hold a single value. <b>Remarks 1</b> gives every single row the dashboard header it belongs to: Never purchased — cancelled / refunded, Refunded, Refunded product not received back, Pending refunds, DG products — EDD brief, Pending to deliver, Delivered, or Duplicate lead. <b>Remarks 2</b> gives the sub-grouping shown under that header: Shipped / Not shipped (Pending to deliver), the EDD position (DG products), Delivered on time / with delay, No reverse pickup update, or the Zoho lead status for the refund and never-purchased headers. A line gets exactly one header, checked in that order. This always covers the whole uploaded file, not just what the filters above are currently showing.</p>
+          <p class="desc">Every row exactly as you uploaded it — all original columns, in the original order — with three columns added at the end: Remarks 1, Remarks 2 and <b>Action</b>. Action says what to do with a line: <b>Inform delay with cancel option</b> (DG products whose EDD is breached, breaches today or breaches within 4 days), <b>Inform delay</b> (Pending to deliver, Not shipped, EDD today or within the coming 4 days) or <b>Uncontactable customer</b> (Pending to deliver, Shipped, EDD already breached — before the report as-of date). All other lines are left blank. Once the Amazon report is loaded, three more follow: <b>Amazon Remarks</b> (the refund check — Refund done on Amazon, not updated in Zoho / Refund updated in Zoho, not done on Amazon / Refund done on both / No refund on either / Data not found), then <b>Type</b> and <b>Transaction Status</b> looked up from the Amazon file by order ID. An order can have several transactions (for example Order and Refund); one is shown — the Refund if there is one (the most recent if there are several), otherwise the A-to-z claim, otherwise the Order — so both cells always hold a single value. <b>Remarks 1</b> gives every single row the dashboard header it belongs to: Never purchased — cancelled / refunded, Refunded, Refunded product not received back, Pending refunds, DG products — EDD brief, Pending to deliver, Delivered, or Duplicate lead. <b>Remarks 2</b> gives the sub-grouping shown under that header: Shipped / Not shipped (Pending to deliver), the EDD position (DG products), Delivered on time / with delay, No reverse pickup update, or the Zoho lead status for the refund and never-purchased headers. A line gets exactly one header, checked in that order. This always covers the whole uploaded file, not just what the filters above are currently showing.</p>
           <div class="kpis" id="kpiDownload"></div>
           <button class="btn primary" id="downloadReportBtn" type="button">Download CSV with Remarks</button>
         </div>
@@ -904,11 +904,20 @@ function recompute(){
   renderAll();
 }
 function renderAll(){ themeChart(); renderPurchase(); renderRefunds(); renderNotReturned(); renderPending(); renderDg(); renderShipments(); renderPd(); renderAmz(); renderDownload(); }
+function actKpis(){
+  const n={}; n[ACT_DG]=0; n[ACT_DELAY]=0; n[ACT_UNC]=0;
+  for(const l of LINES){ const h=classifyHeader(l), a=classifyAction(l,h,classifySub(l,h)); if(a) n[a]++; }
+  const tot=LINES.length-DQ.dupes;
+  return kpiP('bad',n[ACT_DG],tot,'Action: '+ACT_DG,'DG products, EDD breached or within 4 days')+
+         kpiP('warn',n[ACT_DELAY],tot,'Action: '+ACT_DELAY,'Not shipped, EDD today or within 4 days')+
+         kpiP('warn',n[ACT_UNC],tot,'Action: '+ACT_UNC,'Shipped, EDD already breached');
+}
 function renderDownload(){
-  const cols = RAW_ROWS[0] ? RAW_ROWS[0].length : 0, extra = AMZ ? 5 : 2;
+  const cols = RAW_ROWS[0] ? RAW_ROWS[0].length : 0, extra = AMZ ? 6 : 3;
   $('#kpiDownload').innerHTML=
     kpi('',fmt(DQ.fileRows),'Rows in your uploaded file','Every row gets a Remarks 1')+
-    kpi('',fmt(cols+extra),'Columns in the download','Your '+fmt(cols)+' original columns + Remarks 1 + Remarks 2'+(AMZ?' + Amazon Remarks + Type + Transaction Status (from the Amazon report)':' — load the Amazon report to add Amazon Remarks, Type and Transaction Status'));
+    actKpis()+
+    kpi('',fmt(cols+extra),'Columns in the download','Your '+fmt(cols)+' original columns + Remarks 1 + Remarks 2 + Action'+(AMZ?' + Amazon Remarks + Type + Transaction Status (from the Amazon report)':' — load the Amazon report to add Amazon Remarks, Type and Transaction Status'));
 }
 $('#downloadReportBtn').addEventListener('click',()=>saveCSV('zoho-report-with-remarks-'+fmtD(ASOF)+'.csv',fullReportCSV()));
 
@@ -1162,17 +1171,30 @@ function classifySub(l, header){
     default: return l.status || '(blank)';   /* Never purchased, Refunded, Pending refunds: the dashboard groups these by Zoho lead status */
   }
 }
+/* Action column (sits after Remarks 2). Uses the same EDD position as the dashboard, measured from the report as-of date.
+   1. DG products, EDD breached / breaches today / in 1-2 days / in 3-4 days  -> Inform delay with cancel option
+   2. Pending to deliver, Not shipped, EDD today or within the coming 4 days  -> Inform delay
+   3. Pending to deliver, Shipped, EDD already breached (before the as-of date) -> Uncontactable customer
+   Every other line has no action. */
+const ACT_DG='Inform delay with cancel option', ACT_DELAY='Inform delay', ACT_UNC='Uncontactable customer';
+function classifyAction(l, header, sub){
+  const b=eddBucket(l);
+  if(header==='DG products — EDD brief' && (b==='breached'||b==='today'||b==='w12'||b==='w34')) return ACT_DG;
+  if(header==='Pending to deliver' && sub==='Not shipped' && (b==='today'||b==='w12'||b==='w34')) return ACT_DELAY;
+  if(header==='Pending to deliver' && sub==='Shipped' && b==='breached') return ACT_UNC;
+  return '';
+}
 function fullReportCSV(){
-  const headerOf=new Map(), subOf=new Map();
-  for(const l of LINES){ const h=classifyHeader(l); headerOf.set(l.i,h); subOf.set(l.i,classifySub(l,h)); }
+  const headerOf=new Map(), subOf=new Map(), actOf=new Map();
+  for(const l of LINES){ const h=classifyHeader(l), sb=classifySub(l,h); headerOf.set(l.i,h); subOf.set(l.i,sb); actOf.set(l.i,classifyAction(l,h,sb)); }
   const withAmz=!!AMZ; if(withAmz) amzClassify();
-  const header=[...RAW_ROWS[0],'Remarks 1','Remarks 2',...(withAmz?['Amazon Remarks','Type','Transaction Status']:[])];
+  const header=[...RAW_ROWS[0],'Remarks 1','Remarks 2','Action',...(withAmz?['Amazon Remarks','Type','Transaction Status']:[])];
   const out=[header.map(csvCell).join(',')];
   for(let i=1;i<RAW_ROWS.length;i++){
     const r=RAW_ROWS[i]||[];
-    const h=headerOf.has(i)?headerOf.get(i):'', s=subOf.has(i)?subOf.get(i):'';
+    const h=headerOf.has(i)?headerOf.get(i):'', s=subOf.has(i)?subOf.get(i):'', ac=actOf.has(i)?actOf.get(i):'';
     const m=withAmz?AMZ_REM.get(i):null, a=withAmz?[m?m.text:'',m?m.type:'',m?m.status:'']:[];
-    out.push([...r,h,s,...a].map(csvCell).join(','));
+    out.push([...r,h,s,ac,...a].map(csvCell).join(','));
   }
   return '\uFEFF'+out.join('\r\n');
 }
